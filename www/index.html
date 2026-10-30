@@ -408,6 +408,18 @@
             renderSidebar();
         }
 
+        function parseCloze(text, isFlipped) {
+            if (!text) return '';
+            // Converts {{c1::hidden_text::hint}} into clean blanks or highlighted answers
+            return text.replace(/\{\{c\d+::(.*?)(?:::(.*?))?\}\}/g, (match, hiddenText, hint) => {
+                if (!isFlipped) {
+                    return `<span class="opacity-60 bg-current/10 px-1.5 py-0.5 rounded border border-dashed border-current">[${hint || '...'}]</span>`;
+                } else {
+                    return `<span class="text-emerald-500 font-semibold underline decoration-emerald-500/40">${hiddenText}</span>`;
+                }
+            });
+        }
+
         function updateUI() {
             const deck = getActiveDeck();
             const totalEl = document.getElementById('stats');
@@ -432,7 +444,9 @@
 
             const currentCard = dueCards[currentCardIndex];
             let contentToShow = !isFlipped ? currentCard.front : currentCard.back;
-            cardContent.innerHTML = parseMediaReferences(contentToShow);
+            
+            // Parse media references and cloze tags cleanly
+            cardContent.innerHTML = parseMediaReferences(parseCloze(contentToShow, isFlipped));
 
             if (!isFlipped) {
                 cardPrompt.innerText = "Question (Click to flip)";
