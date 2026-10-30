@@ -11,14 +11,17 @@
     <!-- SQL.js to read Anki's SQLite database inside the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 </head>
-<body class="bg-zinc-900 text-zinc-100 h-full flex overflow-hidden">
+<body class="bg-zinc-900 text-zinc-100 h-full flex overflow-hidden relative">
+
+    <!-- MOBILE SIDEBAR OVERLAY BACKDROP -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm"></div>
 
     <!-- SIDEBAR -->
-    <aside class="w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-10 transition-all">
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
         <!-- Sidebar Header -->
         <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
             <h2 class="font-bold text-zinc-200 flex items-center gap-2">🧠 Anki Suite</h2>
-            <button onclick="toggleSidebarMobile()" class="md:hidden text-zinc-400 hover:text-white">✕</button>
+            <button onclick="toggleSidebar()" class="md:hidden text-zinc-400 hover:text-white p-1">✕</button>
         </div>
 
         <!-- Sidebar Actions -->
@@ -29,7 +32,7 @@
             </label>
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="openFolderModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs py-1.5 px-2 rounded border border-zinc-800 transition">+ New Folder</button>
-                <button onclick="openCompileModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs py-1.5 px-2 rounded border border-zinc-800 transition">⚙️ Compile Decks</button>
+                <button onclick="openCompileModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs py-1.5 px-2 rounded border border-zinc-800 transition">⚙️ Compile</button>
             </div>
         </div>
 
@@ -46,30 +49,33 @@
     </aside>
 
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-zinc-900 relative">
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-zinc-900 relative w-full">
         
         <!-- Top Navbar -->
-        <header class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-6 flex items-center justify-between">
+        <header class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
-                <h1 id="active-deck-title" class="font-semibold text-zinc-200 text-lg">No Deck Selected</h1>
+                <button onclick="toggleSidebar()" class="md:hidden text-zinc-300 hover:text-white bg-zinc-800 p-2 rounded-lg border border-zinc-700 text-xs flex items-center gap-1">
+                    <span>☰ Menu</span>
+                </button>
+                <h1 id="active-deck-title" class="font-semibold text-zinc-200 text-sm md:text-lg truncate max-w-[180px] md:max-w-md">No Deck Selected</h1>
             </div>
-            <div id="stats" class="text-xs font-medium text-zinc-400 bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700">
+            <div id="stats" class="text-[11px] md:text-xs font-medium text-zinc-400 bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shrink-0">
                 Due: 0 | Total: 0
             </div>
         </header>
 
         <!-- Workspace View -->
-        <div class="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center">
-            <div class="w-full max-w-2xl flex flex-col items-center">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-between">
+            <div class="w-full max-w-2xl flex flex-col items-center my-auto">
                 
                 <!-- Card Box -->
-                <div id="card-box" onclick="flipCard()" class="w-full bg-zinc-800/80 hover:bg-zinc-800 min-h-[320px] rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border border-zinc-700/60 shadow-xl overflow-auto relative group">
-                    <p id="card-prompt" class="absolute top-4 left-6 text-[11px] uppercase tracking-wider text-zinc-400 font-medium">Click card to flip</p>
-                    <div id="card-content" class="text-2xl font-normal text-zinc-100 w-full mt-4">Select or upload a deck from the sidebar to begin studying!</div>
+                <div id="card-box" onclick="flipCard()" class="w-full bg-zinc-800/80 hover:bg-zinc-800 min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border border-zinc-700/60 shadow-xl overflow-auto relative group">
+                    <p id="card-prompt" class="absolute top-4 left-6 text-[10px] md:text-[11px] uppercase tracking-wider text-zinc-400 font-medium">Click card to flip</p>
+                    <div id="card-content" class="text-xl md:text-2xl font-normal text-zinc-100 w-full mt-4">Select or upload a deck from the menu to begin studying!</div>
                 </div>
 
                 <!-- 4-Button Anki Rating Layout (Hidden until flipped) -->
-                <div id="rating-buttons" class="hidden grid grid-cols-4 gap-3 w-full mt-6">
+                <div id="rating-buttons" class="hidden grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full mt-4 md:mt-6">
                     <button onclick="rateCard('again')" class="bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
                         <span>Again</span><span class="text-[10px] opacity-70 mt-0.5">(Repeat)</span>
                     </button>
@@ -84,20 +90,20 @@
                     </button>
                 </div>
                 
-                <div id="no-cards" class="hidden text-center py-16">
-                    <p class="text-2xl text-emerald-400 font-semibold mb-2">🎉 All caught up!</p>
-                    <p class="text-sm text-zinc-400">No more cards due right now in this deck.</p>
+                <div id="no-cards" class="hidden text-center py-12">
+                    <p class="text-xl md:text-2xl text-emerald-400 font-semibold mb-2">🎉 All caught up!</p>
+                    <p class="text-xs md:text-sm text-zinc-400">No more cards due right now in this deck.</p>
                 </div>
 
             </div>
 
             <!-- Manual Note Adder Card -->
-            <div class="w-full max-w-2xl mt-12 bg-zinc-950/60 border border-zinc-800 p-5 rounded-xl">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">Add Custom Note to Active Deck</h3>
-                <form onsubmit="addCard(event)" class="space-y-3">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input type="text" id="new-front" placeholder="Front (Question or HTML/Image link)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
-                        <input type="text" id="new-back" placeholder="Back (Answer)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
+            <div class="w-full max-w-2xl mt-6 bg-zinc-950/60 border border-zinc-800 p-4 rounded-xl shrink-0">
+                <h3 class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2.5">Add Custom Note to Active Deck</h3>
+                <form onsubmit="addCard(event)" class="space-y-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <input type="text" id="new-front" placeholder="Front (Question or Image link)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs md:text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
+                        <input type="text" id="new-back" placeholder="Back (Answer)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs md:text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
                     </div>
                     <button type="submit" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2 rounded-lg transition text-xs border border-zinc-700">Add Note</button>
                 </form>
@@ -139,9 +145,6 @@
         let SQL;
         let mediaFiles = {}; 
 
-        // Application State Structure stored in localStorage
-        // folders: [{ id, name, deckIds: [] }]
-        // decks: [{ id, name, folderId, cards: [] }]
         let appState = JSON.parse(localStorage.getItem('web_anki_state_v1')) || {
             folders: [],
             decks: [
@@ -181,11 +184,18 @@
             return appState.decks.find(d => d.id === activeDeckId) || appState.decks[0];
         }
 
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
         function initSession() {
             const deck = getActiveDeck();
             if (!deck) return;
             
-            document.getElementById('active-deck-title').innerText = deck.name;
+            document.getElementById('active-deck-titleinnerText = deck.name;
             const now = Date.now();
             dueCards = deck.cards.filter(card => card.dueDate <= now);
             currentCardIndex = 0;
@@ -204,6 +214,7 @@
             const ratingButtons = document.getElementById('rating-buttons');
             const noCardsDiv = document.getElementById('no-cards');
             const cardBox = document.getElementById('card-box');
+            document.getElementById('active-deck-title').innerText = deck ? deck.name : 'No Deck Selected';
 
             if (!deck || dueCards.length === 0) {
                 cardBox.classList.add('hidden');
@@ -245,7 +256,6 @@
         }
 
         function rateCard(rating) {
-            const deck = getActiveDeck();
             const card = dueCards[currentCardIndex];
             const now = Date.now();
             const DAY = 24 * 60 * 60 * 1000;
@@ -285,7 +295,6 @@
             document.getElementById('sidebar-total-decks').innerText = `Decks: ${appState.decks.length}`;
             document.getElementById('sidebar-total-cards').innerText = `Cards: ${totalCardsCount}`;
 
-            // 1. Render Unfiled Decks
             const unfiledDecks = appState.decks.filter(d => !d.folderId);
             if (unfiledDecks.length > 0) {
                 const unfiledDiv = document.createElement('div');
@@ -298,7 +307,6 @@
                 treeContainer.appendChild(unfiledDiv);
             }
 
-            // 2. Render Folders & Their Decks
             appState.folders.forEach(folder => {
                 const folderDiv = document.createElement('div');
                 folderDiv.className = 'space-y-1 pt-2';
@@ -307,16 +315,16 @@
                 
                 let decksHtml = '';
                 folderDecks.forEach(deck => {
-                    decksHtml += `<div onclick="selectDeck('${deck.id}')" class="pl-4 py-1.5 px-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${deck.id === activeDeckId ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}">
-                        <span>📁 ${deck.name}</span>
-                        <span class="text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400">${deck.cards.length}</span>
+                    decksHtml += `<div onclick="selectDeck('${deck.id}')" class="pl-4 py-2 px-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${deck.id === activeDeckId ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}">
+                        <span class="truncate">📁 ${deck.name}</span>
+                        <span class="text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400 shrink-0">${deck.cards.length}</span>
                     </div>`;
                 });
 
                 folderDiv.innerHTML = `
                     <div class="flex items-center justify-between px-2 py-1 text-xs font-semibold text-zinc-300">
                         <span>📂 ${folder.name}</span>
-                        <button onclick="deleteFolder('${folder.id}')" class="text-zinc-600 hover:text-rose-400 text-[10px]">✕</button>
+                        <button onclick="deleteFolder('${folder.id}')" class="text-zinc-600 hover:text-rose-400 text-[10px] p-1">✕</button>
                     </div>
                     <div class="space-y-0.5">${decksHtml}</div>
                 `;
@@ -330,7 +338,7 @@
             div.onclick = () => selectDeck(deck.id);
             div.innerHTML = `
                 <span class="truncate">📄 ${deck.name}</span>
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 shrink-0">
                     <span class="text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400">${deck.cards.length}</span>
                     <select onclick="event.stopPropagation()" onchange="moveDeckToFolder('${deck.id}', this.value)" class="bg-zinc-900 text-[10px] text-zinc-400 border border-zinc-800 rounded px-1 py-0.5">
                         <option value="">Move...</option>
@@ -344,6 +352,10 @@
         function selectDeck(deckId) {
             activeDeckId = deckId;
             initSession();
+            // Automatically close sidebar on mobile after selecting a deck
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
         }
 
         function moveDeckToFolder(deckId, folderId) {
@@ -355,179 +367,4 @@
             }
         }
 
-        // Modals management
-        function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
-        function openCompileModal() {
-            const container = document.getElementById('compile-checkboxes');
-            container.innerHTML = appState.decks.map(d => `
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" value="${d.id}" class="compile-checkbox accent-zinc-500">
-                    <span class="text-zinc-200 text-xs">${d.name} (${d.cards.length} cards)</span>
-                </label>
-            `).join('');
-            document.getElementById('compile-modal').classList.remove('hidden');
-        }
-        function closeModals() {
-            document.getElementById('folder-modal').classList.add('hidden');
-            document.getElementById('compile-modal').classList.add('hidden');
-        }
-
-        function createFolder() {
-            const nameInput = document.getElementById('folder-name-input');
-            const name = nameInput.value.trim();
-            if (!name) return;
-
-            appState.folders.push({
-                id: 'folder-' + Date.now(),
-                name: name
-            });
-            saveState();
-            nameInput.value = '';
-            closeModals();
-            renderSidebar();
-        }
-
-        function deleteFolder(folderId) {
-            appState.folders = appState.folders.filter(f => f.id !== folderId);
-            appState.decks.forEach(d => {
-                if (d.folderId === folderId) d.folderId = null;
-            });
-            saveState();
-            renderSidebar();
-        }
-
-        function compileDecks() {
-            const checkboxes = document.querySelectorAll('.compile-checkbox:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-            const masterNameInput = document.getElementById('compiled-deck-name').value.trim() || 'Compiled Master Deck';
-
-            if (selectedIds.length === 0) {
-                alert('Please select at least one deck to compile.');
-                return;
-            }
-
-            let masterCards = [];
-            appState.decks.forEach(d => {
-                if (selectedIds.includes(d.id)) {
-                    masterCards = masterCards.concat(d.cards);
-                }
-            });
-
-            const newMasterDeck = {
-                id: 'deck-' + Date.now(),
-                name: masterNameName_fix(masterNameInput),
-                folderId: null,
-                cards: masterCards
-            };
-
-            appState.decks.push(newMasterDeck);
-            saveState();
-            closeModals();
-            selectDeck(newMasterDeck.id);
-        }
-
-        function masterNameName_fix(val) { return val; }
-
-        // Handle .apkg upload
-        async function handleApkgUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!SQL) {
-                alert("Database engine is still initializing. Please wait a second.");
-                return;
-            }
-
-            try {
-                const zip = new JSZip();
-                const contents = await zip.loadAsync(file);
-
-                let mediaMap = {};
-                if (contents.files["media"]) {
-                    const mediaJsonText = await contents.files["media"].async("text");
-                    mediaMap = JSON.parse(mediaJsonText);
-                }
-
-                mediaFiles = {};
-                for (let key in mediaMap) {
-                    const filename = mediaMap[key];
-                    if (contents.files[key]) {
-                        const fileData = await contents.files[key].async("blob");
-                        mediaFiles[filename] = URL.createObjectURL(fileData);
-                    }
-                }
-
-                let dbFileKey = Object.keys(contents.files).find(filename => filename.includes("collection.anki2"));
-                if (!dbFileKey) {
-                    alert("Invalid .apkg file: Database not found.");
-                    return;
-                }
-
-                const uInt8Array = await contents.files[dbFileKey].async("uint8array");
-                const db = new SQL.Database(uInt8Array);
-
-                const res = db.exec("SELECT flds FROM notes");
-                if (res.length > 0 && res[0].values) {
-                    const extractedCards = [];
-                    res[0].values.forEach((row, index) => {
-                        const fields = row[0].split("\x1f");
-                        if (fields.length >= 2) {
-                            extractedCards.push({
-                                id: Date.now() + index,
-                                front: fields[0],
-                                back: fields[1],
-                                interval: 0,
-                                easeFactor: 2.5,
-                                dueDate: 0
-                            });
-                        }
-                    });
-
-                    if (extractedCards.length > 0) {
-                        const deckName = file.name.replace(/\.[^/.]+$/, "");
-                        const newDeck = {
-                            id: 'deck-' + Date.now(),
-                            name: deckName,
-                            folderId: null,
-                            cards: extractedCards
-                        };
-                        appState.decks.push(newDeck);
-                        saveState();
-                        selectDeck(newDeck.id);
-                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Error reading .apkg file.");
-            }
-        }
-
-        function addCard(event) {
-            event.preventDefault();
-            const deck = getActiveDeck();
-            if (!deck) return;
-
-            const frontInput = document.getElementById('new-front');
-            const backInput = document.getElementById('new-back');
-
-            deck.cards.push({
-                id: Date.now(),
-                front: frontInput.value,
-                back: backInput.value,
-                interval: 0,
-                easeFactor: 2.5,
-                dueDate: 0
-            });
-
-            saveState();
-            frontInput.value = '';
-            backInput.value = '';
-            initSession();
-        }
-
-        // Run on load
-        initSession();
-    </script>
-</body>
-</html>
+        function openFolderModal() { document.getElementById('folder-modal').classList.rem
