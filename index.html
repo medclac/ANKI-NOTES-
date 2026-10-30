@@ -195,7 +195,6 @@
             const deck = getActiveDeck();
             if (!deck) return;
             
-            document.getElementById('active-deck-titleinnerText = deck.name;
             const now = Date.now();
             dueCards = deck.cards.filter(card => card.dueDate <= now);
             currentCardIndex = 0;
@@ -352,7 +351,6 @@
         function selectDeck(deckId) {
             activeDeckId = deckId;
             initSession();
-            // Automatically close sidebar on mobile after selecting a deck
             if (window.innerWidth < 768) {
                 toggleSidebar();
             }
@@ -367,4 +365,7 @@
             }
         }
 
-        function openFolderModal() { document.getElementById('folder-modal').classList.rem
+        function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
+        function openCompileModal() {
+            const container = document.getElementById('compile-checkboxes');
+            container
