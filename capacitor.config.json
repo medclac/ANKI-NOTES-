@@ -1,0 +1,6 @@
+{
+  "appId": "com.anki.webreader",
+  "appName": "Web Anki",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
