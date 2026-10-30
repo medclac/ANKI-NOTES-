@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki Web Reader & Runner</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- JSZip to unpack .apkg files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- SQL.js to read Anki's SQLite database inside the browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-xl bg-slate-800 rounded-xl shadow-2xl p-6 border border-slate-700">
+        
+        <!-- Header & File Uploader -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b border-slate-700 pb-4 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-400">🧠 Web Anki Reader</h1>
+                <div id="stats" class="text-xs text-slate-400 mt-1">Due: 0 | Total: 0</div>
+            </div>
+            <!-- Upload .apkg button -->
+            <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow flex items-center gap-1.5">
+                <span>📁 Upload .apkg File</span>
+                <input type="file" id="apkg-file" accept=".apkg" class="hidden" onchange="handleApkgUpload(event)">
+            </label>
+        </div>
+
+        <!-- Main Study View -->
+        <div id="study-container">
+            <!-- Card Box -->
+            <div id="card-box" onclick="flipCard()" class="bg-slate-700 min-h-[220px] rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-650 transition border border-slate-600 shadow-inner overflow-auto">
+                <p id="card-prompt" class="text-xs uppercase tracking-wider text-indigo-300 mb-2">Click card to flip</p>
+                <div id="card-content" class="text-xl font-medium w-full">Upload an .apkg file or use sample cards below to begin!</div>
+            </div>
+
+            <!-- 4-Button Anki Rating Layout (Hidden until flipped) -->
+            <div id="rating-buttons" class="hidden grid grid-cols-4 gap-2 mt-6">
+                <button onclick="rateCard('again')" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3 px-1 rounded-lg transition shadow text-xs">Again<br><span class="text-[10px] font-normal opacity-80">(Repeat)</span></button>
+                <button onclick="rateCard('hard')" class="bg-orange-600 hover:bg-orange-500 text-white font-semibold py-3 px-1 rounded-lg transition shadow text-xs">Hard<br><span class="text-[10px] font-normal opacity-80">(Soon)</span></button>
+                <button onclick="rateCard('good')" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-1 rounded-lg transition shadow text-xs">Good<br><span class="text-[10px] font-normal opacity-80">(Normal)</span></button>
+                <button onclick="rateCard('easy')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-1 rounded-lg transition shadow text-xs">Easy<br><span class="text-[10px] font-normal opacity-80">(Later)</span></button>
+            </div>
+            
+            <div id="no-cards" class="hidden text-center py-12">
+                <p class="text-xl text-emerald-400 font-semibold mb-2">🎉 All caught up!</p>
+                <p class="text-sm text-slate-400">No more cards due right now.</p>
+            </div>
+        </div>
+
+        <!-- Manual Add Card Section -->
+        <div class="mt-8 pt-6 border-t border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-300 mb-3">Add Custom Note (Supports Image Links/HTML)</h2>
+            <form onsubmit="addCard(event)" class="space-y-3">
+                <input type="text" id="new-front" placeholder="Front (e.g., Question or <img src='url'>)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                <input type="text" id="new-back" placeholder="Back (e.g., Answer)" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                <button type="submit" class="w-full bg-slate-700 hover:bg-slate-650 text-slate-200 font-semibold py-2 rounded-lg transition text-xs border border-slate-600">Add to Deck</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        let SQL;
+        let mediaFiles = {}; // Stores unzipped image/audio blobs keyed by media index numbers
+
+        // Default sample deck
+        const defaultDeck = [
+            { id: 1, front: "What is the capital of India?", back: "New Delhi", interval: 0, easeFactor: 2.5, dueDate: 0 },
+            { id: 2, front: "What does HTML stand for?", back: "HyperText Markup Language", interval: 0, easeFactor: 2.5, dueDate: 0 }
+        ];
+
+        let deck = JSON.parse(localStorage.getItem('web_anki_deck_v3')) || defaultDeck;
+        let currentCardIndex = 0;
+        let isFlipped = false;
+        let dueCards = [];
+
+        // Initialize SQL.js engine
+        async function initSQL() {
+            try {
+                SQL = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+            } catch (err) {
+                console.error("Failed to initialize SQLite database engine", err);
+            }
+        }
+        initSQL();
+
+        function saveDeck() {
+            localStorage.setItem('web_anki_deck_v3', JSON.stringify(deck));
+        }
+
+        function initSession() {
+            const now = Date.now();
+            dueCards = deck.filter(card => card.dueDate <= now);
+            currentCardIndex = 0;
+            isFlipped = false;
+            updateUI();
+        }
+
+        function updateUI() {
+            const totalEl = document.getElementById('stats');
+            totalEl.innerText = `Due: ${dueCards.length} | Total: ${deck.length}`;
+
+            const cardContent = document.getElementById('card-content');
+            const cardPrompt = document.getElementById('card-prompt');
+            const ratingButtons = document.getElementById('rating-buttons');
+            const noCardsDiv = document.getElementById('no-cards');
+            const cardBox = document.getElementById('card-box');
+
+            if (dueCards.length === 0) {
+                cardBox.classList.add('hidden');
+                ratingButtons.classList.add('hidden');
+                noCardsDiv.classList.remove('hidden');
+                return;
+            }
+
+            cardBox.classList.remove('hidden');
+            noCardsDiv.classList.add('hidden');
+
+            const currentCard = dueCards[currentCardIndex];
+            
+            // Render text and parse image placeholders if media mapping exists
+            let contentToShow = !isFlipped ? currentCard.front : currentCard.back;
+            cardContent.innerHTML = parseMediaReferences(contentToShow);
+
+            if (!isFlipped) {
+                cardPrompt.innerText = "Question (Click to flip)";
+                ratingButtons.classList.add('hidden');
+            } else {
+                cardPrompt.innerText = "Answer";
+                ratingButtons.classList.remove('hidden');
+            }
+        }
+
+        // Replaces Anki media names with local object URLs for rendering images/audio
+        function parseMediaReferences(htmlString) {
+            if (!htmlString) return '';
+            // Match standard img tags or text references and convert if we have them loaded
+            return htmlString.replace(/src="([^"]+)"/g, (match, filename) => {
+                if (mediaFiles[filename]) {
+                    return `src="${mediaFiles[filename]}"`;
+                }
+                return match;
+            });
+        }
+
+        function flipCard() {
+            if (dueCards.length === 0) return;
+            isFlipped = !isFlipped;
+            updateUI();
+        }
+
+        function rateCard(rating) {
+            const card = dueCards[currentCardIndex];
+            const now = Date.now();
+            const DAY = 24 * 60 * 60 * 1000;
+
+            if (rating === 'again' || rating === 'hard') {
+                card.dueDate = now;
+                card.interval = 0;
+            } else if (rating === 'good') {
+                card.interval = Math.max(1, Math.round((card.interval || 1) * 1.2));
+                card.dueDate = now + (card.interval * DAY);
+            } else if (rating === 'easy') {
+                card.interval = Math.max(3, Math.round((card.interval || 1) * card.easeFactor));
+                card.dueDate = now + (card.interval * DAY);
+            }
+
+            const indexInDeck = deck.findIndex(d => d.id === card.id);
+            if (indexInDeck !== -1) {
+                deck[indexInDeck] = card;
+            }
+            saveDeck();
+
+            isFlipped = false;
+            if (rating === 'again' || rating === 'hard') {
+                dueCards.push(card);
+            }
+
+            dueCards.splice(currentCardIndex, 1);
+            if (currentCardIndex >= dueCards.length) {
+                currentCardIndex = 0;
+            }
+            updateUI();
+        }
+
+        // Handles extraction of .apkg files dropped from storage
+        async function handleApkgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!SQL) {
+                alert("Database engine is still initializing. Please wait a second and try again.");
+                return;
+            }
+
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+
+                // 1. Read the media map json if it exists
+                let mediaMap = {};
+                if (contents.files["media"]) {
+                    const mediaJsonText = await contents.files["media"].async("text");
+                    mediaMap = JSON.parse(mediaJsonText);
+                }
+
+                // 2. Extract media files into blob URLs
+                mediaFiles = {};
+                for (let key in mediaMap) {
+                    const filename = mediaMap[key];
+                    if (contents.files[key]) {
+                        const fileData = await contents.files[key].async("blob");
+                        mediaFiles[filename] = URL.createObjectURL(fileData);
+                    }
+                }
+
+                // 3. Find and load the SQLite database file (collection.anki2 or collection.anki21)
+                let dbFileKey = Object.keys(contents.files).find(filename => filename.includes("collection.anki2"));
+                if (!dbFileKey) {
+                    alert("Invalid .apkg file: SQLite database collection not found.");
+                    return;
+                }
+
+                const uInt8Array = await contents.files[dbFileKey].async("uint8array");
+                const db = new SQL.Database(uInt8Array);
+
+                // 4. Query notes from Anki database
+                const res = db.exec("SELECT flds FROM notes");
+                if (res.length > 0 && res[0].values) {
+                    const extractedDeck = [];
+                    res[0].values.forEach((row, index) => {
+                        const fields = row[0].split("\x1f"); // Anki separates fields with unit separator character
+                        if (fields.length >= 2) {
+                            extractedDeck.push({
+                                id: Date.now() + index,
+                                front: fields[0],
+                                back: fields[1],
+                                interval: 0,
+                                easeFactor: 2.5,
+                                dueDate: 0
+                            });
+                        }
+                    });
+
+                    if (extractedDeck.length > 0) {
+                        deck = extractedDeck;
+                        saveDeck();
+                        initSession();
+                        alert(`Successfully imported ${deck.length} notes with images from your .apkg file!`);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error reading .apkg file. Make sure it's a valid Anki export file.");
+            }
+        }
+
+        function addCard(event) {
+            event.preventDefault();
+            const frontInput = document.getElementById('new-front');
+            const backInput = document.getElementById('new-back');
+
+            const newNote = {
+                id: Date.now(),
+                front: frontInput.value,
+                back: backInput.value,
+                interval: 0,
+                easeFactor: 2.5,
+                dueDate: 0
+            };
+
+            deck.push(newNote);
+            saveDeck();
+
+            frontInput.value = '';
+            backInput.value = '';
+            initSession();
+        }
+
+        initSession();
+    </script>
+</body>
+</html>
