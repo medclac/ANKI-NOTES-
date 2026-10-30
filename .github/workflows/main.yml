@@ -33,7 +33,7 @@ jobs:
 
     - name: Generate App Icons from icon.png
       run: |
-        npx capacitor-assets generate --iconPath resources/icon.png
+        npx capacitor-assets generate
 
     - name: Build APK via Gradle
       run: |
