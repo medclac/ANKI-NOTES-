@@ -17,11 +17,11 @@
     <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
         <!-- Sidebar Header -->
         <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
             <h2 class="font-bold text-zinc-200 flex items-center gap-2">🧠 Anki Suite</h2>
-            <button onclick="toggleSidebar()" class="md:hidden text-zinc-400 hover:text-white p-1">✕</button>
+            <button onclick="toggleSidebar()" class="md:hidden text-zinc-400 hover:text-white p-2">✕</button>
         </div>
 
         <!-- Sidebar Actions -->
@@ -187,15 +187,22 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebar-backdrop');
-            sidebar.classList.toggle('-translate-x-full');
-            backdrop.classList.toggle('hidden');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+                backdrop.classList.add('hidden');
+            }
         }
 
         function initSession() {
             const deck = getActiveDeck();
             if (!deck) return;
             
-            document.getElementById('active-deck-titleinnerText = deck.name;
             const now = Date.now();
             dueCards = deck.cards.filter(card => card.dueDate <= now);
             currentCardIndex = 0;
@@ -352,7 +359,6 @@
         function selectDeck(deckId) {
             activeDeckId = deckId;
             initSession();
-            // Automatically close sidebar on mobile after selecting a deck
             if (window.innerWidth < 768) {
                 toggleSidebar();
             }
@@ -367,7 +373,10 @@
             }
         }
 
-        function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
+        function openFolderModal() { 
+            document.getElementById('folder-modal').classList.remove('hidden'); 
+        }
+
         function openCompileModal() {
             const container = document.getElementById('compile-checkboxes');
             container.innerHTML = appState.decks.map(d => `
@@ -378,6 +387,7 @@
             `).join('');
             document.getElementById('compile-modal').classList.remove('hidden');
         }
+
         function closeModals() {
             document.getElementById('folder-modal').classList.add('hidden');
             document.getElementById('compile-modal').classList.add('hidden');
