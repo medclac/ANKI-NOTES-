@@ -31,6 +31,10 @@ jobs:
         npx cap add android
         npx cap sync android
 
+    - name: Generate App Icons from icon.png
+      run: |
+        npx capacitor-assets generate --iconPath resources/icon.png
+
     - name: Build APK via Gradle
       run: |
         cd android
