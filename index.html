@@ -195,6 +195,7 @@
             const deck = getActiveDeck();
             if (!deck) return;
             
+            document.getElementById('active-deck-titleinnerText = deck.name;
             const now = Date.now();
             dueCards = deck.cards.filter(card => card.dueDate <= now);
             currentCardIndex = 0;
@@ -351,6 +352,7 @@
         function selectDeck(deckId) {
             activeDeckId = deckId;
             initSession();
+            // Automatically close sidebar on mobile after selecting a deck
             if (window.innerWidth < 768) {
                 toggleSidebar();
             }
@@ -368,4 +370,171 @@
         function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
         function openCompileModal() {
             const container = document.getElementById('compile-checkboxes');
-            container
+            container.innerHTML = appState.decks.map(d => `
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" value="${d.id}" class="compile-checkbox accent-zinc-500">
+                    <span class="text-zinc-200 text-xs">${d.name} (${d.cards.length} cards)</span>
+                </label>
+            `).join('');
+            document.getElementById('compile-modal').classList.remove('hidden');
+        }
+        function closeModals() {
+            document.getElementById('folder-modal').classList.add('hidden');
+            document.getElementById('compile-modal').classList.add('hidden');
+        }
+
+        function createFolder() {
+            const nameInput = document.getElementById('folder-name-input');
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            appState.folders.push({
+                id: 'folder-' + Date.now(),
+                name: name
+            });
+            saveState();
+            nameInput.value = '';
+            closeModals();
+            renderSidebar();
+        }
+
+        function deleteFolder(folderId) {
+            appState.folders = appState.folders.filter(f => f.id !== folderId);
+            appState.decks.forEach(d => {
+                if (d.folderId === folderId) d.folderId = null;
+            });
+            saveState();
+            renderSidebar();
+        }
+
+        function compileDecks() {
+            const checkboxes = document.querySelectorAll('.compile-checkbox:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+            const masterNameInput = document.getElementById('compiled-deck-name').value.trim() || 'Compiled Master Deck';
+
+            if (selectedIds.length === 0) {
+                alert('Please select at least one deck to compile.');
+                return;
+            }
+
+            let masterCards = [];
+            appState.decks.forEach(d => {
+                if (selectedIds.includes(d.id)) {
+                    masterCards = masterCards.concat(d.cards);
+                }
+            });
+
+            const newMasterDeck = {
+                id: 'deck-' + Date.now(),
+                name: masterNameInput,
+                folderId: null,
+                cards: masterCards
+            };
+
+            appState.decks.push(newMasterDeck);
+            saveState();
+            closeModals();
+            selectDeck(newMasterDeck.id);
+        }
+
+        async function handleApkgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!SQL) {
+                alert("Database engine is still initializing. Please wait a second.");
+                return;
+            }
+
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+
+                let mediaMap = {};
+                if (contents.files["media"]) {
+                    const mediaJsonText = await contents.files["media"].async("text");
+                    mediaMap = JSON.parse(mediaJsonText);
+                }
+
+                mediaFiles = {};
+                for (let key in mediaMap) {
+                    const filename = mediaMap[key];
+                    if (contents.files[key]) {
+                        const fileData = await contents.files[key].async("blob");
+                        mediaFiles[filename] = URL.createObjectURL(fileData);
+                    }
+                }
+
+                let dbFileKey = Object.keys(contents.files).find(filename => filename.includes("collection.anki2"));
+                if (!dbFileKey) {
+                    alert("Invalid .apkg file: Database not found.");
+                    return;
+                }
+
+                const uInt8Array = await contents.files[dbFileKey].async("uint8array");
+                const db = new SQL.Database(uInt8Array);
+
+                const res = db.exec("SELECT flds FROM notes");
+                if (res.length > 0 && res[0].values) {
+                    const extractedCards = [];
+                    res[0].values.forEach((row, index) => {
+                        const fields = row[0].split("\x1f");
+                        if (fields.length >= 2) {
+                            extractedCards.push({
+                                id: Date.now() + index,
+                                front: fields[0],
+                                back: fields[1],
+                                interval: 0,
+                                easeFactor: 2.5,
+                                dueDate: 0
+                            });
+                        }
+                    });
+
+                    if (extractedCards.length > 0) {
+                        const deckName = file.name.replace(/\.[^/.]+$/, "");
+                        const newDeck = {
+                            id: 'deck-' + Date.now(),
+                            name: deckName,
+                            folderId: null,
+                            cards: extractedCards
+                        };
+                        appState.decks.push(newDeck);
+                        saveState();
+                        selectDeck(newDeck.id);
+                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error reading .apkg file.");
+            }
+        }
+
+        function addCard(event) {
+            event.preventDefault();
+            const deck = getActiveDeck();
+            if (!deck) return;
+
+            const frontInput = document.getElementById('new-front');
+            const backInput = document.getElementById('new-back');
+
+            deck.cards.push({
+                id: Date.now(),
+                front: frontInput.value,
+                back: backInput.value,
+                interval: 0,
+                easeFactor: 2.5,
+                dueDate: 0
+            });
+
+            saveState();
+            frontInput.value = '';
+            backInput.value = '';
+            initSession();
+        }
+
+        initSession();
+    </script>
+</body>
+</html>
