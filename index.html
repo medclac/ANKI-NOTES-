@@ -11,7 +11,7 @@
     <!-- SQL.js to read Anki's SQLite database inside the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 </head>
-<body class="bg-zinc-900 text-zinc-100 h-full flex overflow-hidden relative">
+<body id="app-body" class="bg-zinc-900 text-zinc-100 h-full flex overflow-hidden relative transition-colors duration-300">
 
     <!-- MOBILE SIDEBAR OVERLAY BACKDROP -->
     <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm"></div>
@@ -49,7 +49,7 @@
     </aside>
 
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-zinc-900 relative w-full">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         
         <!-- Top Navbar -->
         <header class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0">
@@ -57,10 +57,23 @@
                 <button onclick="toggleSidebar()" class="md:hidden text-zinc-300 hover:text-white bg-zinc-800 p-2 rounded-lg border border-zinc-700 text-xs flex items-center gap-1">
                     <span>☰ Menu</span>
                 </button>
-                <h1 id="active-deck-title" class="font-semibold text-zinc-200 text-sm md:text-lg truncate max-w-[180px] md:max-w-md">No Deck Selected</h1>
+                <h1 id="active-deck-title" class="font-semibold text-sm md:text-lg truncate max-w-[150px] md:max-w-md">No Deck Selected</h1>
             </div>
-            <div id="stats" class="text-[11px] md:text-xs font-medium text-zinc-400 bg-zinc-800 px-3 py-1 rounded-full border border-zinc-700 shrink-0">
-                Due: 0 | Total: 0
+            
+            <div class="flex items-center gap-2">
+                <!-- Theme Selector Dropdown -->
+                <select id="theme-selector" onchange="changeTheme(this.value)" class="bg-zinc-800 text-zinc-200 text-xs border border-zinc-700 rounded-lg px-2 py-1.5 focus:outline-none">
+                    <option value="dark-charcoal">🌙 Dark Charcoal</option>
+                    <option value="light-clean">☀️ Clean White</option>
+                    <option value="light-beige">📜 Soft Beige</option>
+                    <option value="light-mint">🌿 Mint Fresh</option>
+                    <option value="light-sky">☁️ Sky Blue</option>
+                    <option value="light-lavender">💜 Lavender Pastel</option>
+                </select>
+
+                <div id="stats" class="text-[11px] md:text-xs font-medium bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700 shrink-0">
+                    Due: 0 | Total: 0
+                </div>
             </div>
         </header>
 
@@ -69,9 +82,9 @@
             <div class="w-full max-w-2xl flex flex-col items-center my-auto">
                 
                 <!-- Card Box -->
-                <div id="card-box" onclick="flipCard()" class="w-full bg-zinc-800/80 hover:bg-zinc-800 min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border border-zinc-700/60 shadow-xl overflow-auto relative group">
-                    <p id="card-prompt" class="absolute top-4 left-6 text-[10px] md:text-[11px] uppercase tracking-wider text-zinc-400 font-medium">Click card to flip</p>
-                    <div id="card-content" class="text-xl md:text-2xl font-normal text-zinc-100 w-full mt-4">Select or upload a deck from the menu to begin studying!</div>
+                <div id="card-box" onclick="flipCard()" class="card-box-el w-full min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border shadow-xl overflow-auto relative group">
+                    <p id="card-prompt" class="absolute top-4 left-6 text-[10px] md:text-[11px] uppercase tracking-wider font-medium opacity-70">Click card to flip</p>
+                    <div id="card-content" class="text-xl md:text-2xl font-normal w-full mt-4">Select or upload a deck from the menu to begin studying!</div>
                 </div>
 
                 <!-- 4-Button Anki Rating Layout (Hidden until flipped) -->
@@ -91,21 +104,21 @@
                 </div>
                 
                 <div id="no-cards" class="hidden text-center py-12">
-                    <p class="text-xl md:text-2xl text-emerald-400 font-semibold mb-2">🎉 All caught up!</p>
-                    <p class="text-xs md:text-sm text-zinc-400">No more cards due right now in this deck.</p>
+                    <p class="text-xl md:text-2xl font-semibold mb-2 text-emerald-500">🎉 All caught up!</p>
+                    <p class="text-xs md:text-sm opacity-70">No more cards due right now in this deck.</p>
                 </div>
 
             </div>
 
             <!-- Manual Note Adder Card -->
-            <div class="w-full max-w-2xl mt-6 bg-zinc-950/60 border border-zinc-800 p-4 rounded-xl shrink-0">
-                <h3 class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2.5">Add Custom Note to Active Deck</h3>
+            <div id="adder-card" class="w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors">
+                <h3 class="text-[11px] font-semibold uppercase tracking-wider mb-2.5 opacity-70">Add Custom Note to Active Deck</h3>
                 <form onsubmit="addCard(event)" class="space-y-2.5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <input type="text" id="new-front" placeholder="Front (Question or Image link)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs md:text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
-                        <input type="text" id="new-back" placeholder="Back (Answer)" required class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-xs md:text-sm focus:outline-none focus:border-zinc-600 text-zinc-200 placeholder-zinc-600">
+                        <input type="text" id="new-front" placeholder="Front (Question or Image link)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
+                        <input type="text" id="new-back" placeholder="Back (Answer)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
                     </div>
-                    <button type="submit" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2 rounded-lg transition text-xs border border-zinc-700">Add Note</button>
+                    <button type="submit" id="adder-btn" class="w-full font-medium py-2 rounded-lg transition text-xs border">Add Note</button>
                 </form>
             </div>
         </div>
@@ -114,9 +127,9 @@
 
     <!-- MODAL: Create Folder -->
     <div id="folder-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-lg font-bold text-zinc-100">Create New Folder</h3>
-            <input type="text" id="folder-name-input" placeholder="Folder Name (e.g. Medicine, Semester 1)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-zinc-100">
+            <h3 class="text-lg font-bold">Create New Folder</h3>
+            <input type="text" id="folder-name-input" placeholder="Folder Name (e.g. Medicine, Semester 1)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none">
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="closeModals()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg">Cancel</button>
                 <button onclick="createFolder()" class="px-4 py-2 bg-zinc-200 hover:bg-white text-zinc-900 font-semibold text-xs rounded-lg">Create</button>
@@ -126,13 +139,13 @@
 
     <!-- MODAL: Compile Decks -->
     <div id="compile-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <h3 class="text-lg font-bold text-zinc-100">Compile Multiple Decks</h3>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-zinc-100">
+            <h3 class="text-lg font-bold">Compile Multiple Decks</h3>
             <p class="text-xs text-zinc-400">Select decks you want to combine into a single master deck:</p>
             <div id="compile-checkboxes" class="max-h-48 overflow-y-auto space-y-2 border border-zinc-800 p-3 rounded-xl bg-zinc-950 text-sm">
                 <!-- Checkboxes populated via JS -->
             </div>
-            <input type="text" id="compiled-deck-name" placeholder="Master Deck Name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none focus:border-zinc-600">
+            <input type="text" id="compiled-deck-name" placeholder="Master Deck Name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none">
             <div class="flex justify-end gap-2 pt-2">
                 <button onclick="closeModals()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg">Cancel</button>
                 <button onclick="compileDecks()" class="px-4 py-2 bg-zinc-200 hover:bg-white text-zinc-900 font-semibold text-xs rounded-lg">Compile</button>
@@ -144,6 +157,77 @@
     <script>
         let SQL;
         let mediaFiles = {}; 
+
+        const themes = {
+            'dark-charcoal': {
+                bodyBg: 'bg-zinc-900', textCol: 'text-zinc-100', mainBg: 'bg-zinc-900',
+                cardBg: 'bg-zinc-800/80 border-zinc-700/60 text-zinc-100',
+                adderBg: 'bg-zinc-950/60 border-zinc-800',
+                inputBg: 'bg-zinc-900 border-zinc-800 text-zinc-200 placeholder-zinc-600',
+                btnBg: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
+            },
+            'light-clean': {
+                bodyBg: 'bg-slate-100', textCol: 'text-slate-900', mainBg: 'bg-slate-100',
+                cardBg: 'bg-white border-slate-300 text-slate-800 shadow-sm',
+                adderBg: 'bg-white border-slate-300 shadow-sm',
+                inputBg: 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400',
+                btnBg: 'bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300'
+            },
+            'light-beige': {
+                bodyBg: 'bg-[#f5f2eb]', textCol: 'text-[#3e3a36]', mainBg: 'bg-[#f5f2eb]',
+                cardBg: 'bg-[#faf8f5] border-[#e3ded6] text-[#3e3a36] shadow-sm',
+                adderBg: 'bg-[#faf8f5] border-[#e3ded6] shadow-sm',
+                inputBg: 'bg-white border-[#e3ded6] text-[#3e3a36] placeholder-stone-400',
+                btnBg: 'bg-[#e3ded6] hover:bg-[#d6d0c4] text-[#3e3a36] border-[#d1ccc1]'
+            },
+            'light-mint': {
+                bodyBg: 'bg-[#edf7f4]', textCol: 'text-[#1b3b32]', mainBg: 'bg-[#edf7f4]',
+                cardBg: 'bg-white border-[#cbebe2] text-[#1b3b32] shadow-sm',
+                adderBg: 'bg-white border-[#cbebe2] shadow-sm',
+                inputBg: 'bg-[#f4faf8] border-[#cbebe2] text-[#1b3b32] placeholder-emerald-300',
+                btnBg: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32] border-[#bce5db]'
+            },
+            'light-sky': {
+                bodyBg: 'bg-[#edf2f7]', textCol: 'text-[#1a365d]', mainBg: 'bg-[#edf2f7]',
+                cardBg: 'bg-white border-[#cbd5e1] text-[#1a365d] shadow-sm',
+                adderBg: 'bg-white border-[#cbd5e1] shadow-sm',
+                inputBg: 'bg-[#f8fafc] border-[#cbd5e1] text-[#1a365d] placeholder-blue-300',
+                btnBg: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d] border-[#cbd5e1]'
+            },
+            'light-lavender': {
+                bodyBg: 'bg-[#f3f0f7]', textCol: 'text-[#2e1a47]', mainBg: 'bg-[#f3f0f7]',
+                cardBg: 'bg-white border-[#e1d5ec] text-[#2e1a47] shadow-sm',
+                adderBg: 'bg-white border-[#e1d5ec] shadow-sm',
+                inputBg: 'bg-[#faf8fd] border-[#e1d5ec] text-[#2e1a47] placeholder-purple-300',
+                btnBg: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47] border-[#ded2ec]'
+            }
+        };
+
+        function changeTheme(themeKey) {
+            const t = themes[themeKey] || themes['dark-charcoal'];
+            localStorage.setItem('web_anki_theme', themeKey);
+            document.getElementById('theme-selector').value = themeKey;
+
+            // Apply body classes
+            const body = document.getElementById('app-body');
+            body.className = `${t.bodyBg} ${t.textCol} h-full flex overflow-hidden relative transition-colors duration-300`;
+
+            // Apply Card Box
+            const cardBox = document.getElementById('card-box');
+            cardBox.className = `w-full min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border shadow-xl overflow-auto relative group ${t.cardBg}`;
+
+            // Apply Adder Section
+            const adderCard = document.getElementById('adder-card');
+            adderCard.className = `w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors ${t.adderBg}`;
+
+            // Apply Inputs & Buttons
+            document.querySelectorAll('.theme-input').forEach(input => {
+                input.className = `theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none ${t.inputBg}`;
+            });
+
+            const adderBtn = document.getElementById('adder-btn');
+            adderBtn.className = `w-full font-medium py-2 rounded-lg transition text-xs border ${t.btnBg}`;
+        }
 
         let appState = JSON.parse(localStorage.getItem('web_anki_state_v1')) || {
             folders: [],
@@ -373,10 +457,7 @@
             }
         }
 
-        function openFolderModal() { 
-            document.getElementById('folder-modal').classList.remove('hidden'); 
-        }
-
+        function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
         function openCompileModal() {
             const container = document.getElementById('compile-checkboxes');
             container.innerHTML = appState.decks.map(d => `
@@ -387,7 +468,6 @@
             `).join('');
             document.getElementById('compile-modal').classList.remove('hidden');
         }
-
         function closeModals() {
             document.getElementById('folder-modal').classList.add('hidden');
             document.getElementById('compile-modal').classList.add('hidden');
@@ -544,6 +624,9 @@
             initSession();
         }
 
+        // Initialize App & Theme on Load
+        const savedTheme = localStorage.getItem('web_anki_theme') || 'dark-charcoal';
+        changeTheme(savedTheme);
         initSession();
     </script>
 </body>
