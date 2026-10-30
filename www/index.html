@@ -11,28 +11,28 @@
     <!-- SQL.js to read Anki's SQLite database inside the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 </head>
-<body id="app-body" class="bg-zinc-900 text-zinc-100 h-full flex overflow-hidden relative transition-colors duration-300">
+<body id="app-body" class="h-full flex overflow-hidden relative transition-colors duration-300">
 
     <!-- MOBILE SIDEBAR OVERLAY BACKDROP -->
     <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm"></div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 border-r flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-all duration-200 ease-in-out">
         <!-- Sidebar Header -->
-        <div class="p-4 border-b border-zinc-800 flex items-center justify-between">
-            <h2 class="font-bold text-zinc-200 flex items-center gap-2">🧠 Anki Suite</h2>
-            <button onclick="toggleSidebar()" class="md:hidden text-zinc-400 hover:text-white p-2">✕</button>
+        <div id="sidebar-header" class="p-4 border-b flex items-center justify-between">
+            <h2 class="font-bold flex items-center gap-2">🧠 Anki Suite</h2>
+            <button onclick="toggleSidebar()" class="sidebar-close-btn md:hidden p-2">✕</button>
         </div>
 
         <!-- Sidebar Actions -->
-        <div class="p-3 border-b border-zinc-800 space-y-2">
-            <label class="w-full cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 border border-zinc-700">
+        <div id="sidebar-actions" class="p-3 border-b space-y-2">
+            <label id="upload-label" class="w-full cursor-pointer text-xs font-semibold py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 border shadow-sm">
                 <span>📁 Upload .apkg Deck</span>
                 <input type="file" id="apkg-file" accept=".apkg" class="hidden" onchange="handleApkgUpload(event)">
             </label>
             <div class="grid grid-cols-2 gap-2">
-                <button onclick="openFolderModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs py-1.5 px-2 rounded border border-zinc-800 transition">+ New Folder</button>
-                <button onclick="openCompileModal()" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs py-1.5 px-2 rounded border border-zinc-800 transition">⚙️ Compile</button>
+                <button onclick="openFolderModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">+ New Folder</button>
+                <button onclick="openCompileModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">⚙️ Compile</button>
             </div>
         </div>
 
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Sidebar Footer Stats -->
-        <div class="p-3 border-t border-zinc-800 text-xs text-zinc-400 flex justify-between">
+        <div id="sidebar-footer" class="p-3 border-t text-xs flex justify-between">
             <span id="sidebar-total-decks">Decks: 0</span>
             <span id="sidebar-total-cards">Cards: 0</span>
         </div>
@@ -52,9 +52,9 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         
         <!-- Top Navbar -->
-        <header class="h-14 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0">
+        <header id="top-navbar" class="h-14 border-b backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden text-zinc-300 hover:text-white bg-zinc-800 p-2 rounded-lg border border-zinc-700 text-xs flex items-center gap-1">
+                <button onclick="toggleSidebar()" id="mobile-menu-btn" class="md:hidden p-2 rounded-lg border text-xs flex items-center gap-1 transition">
                     <span>☰ Menu</span>
                 </button>
                 <h1 id="active-deck-title" class="font-semibold text-sm md:text-lg truncate max-w-[150px] md:max-w-md">No Deck Selected</h1>
@@ -62,7 +62,7 @@
             
             <div class="flex items-center gap-2">
                 <!-- Theme Selector Dropdown -->
-                <select id="theme-selector" onchange="changeTheme(this.value)" class="bg-zinc-800 text-zinc-200 text-xs border border-zinc-700 rounded-lg px-2 py-1.5 focus:outline-none">
+                <select id="theme-selector" onchange="changeTheme(this.value)" class="theme-input text-xs border rounded-lg px-2 py-1.5 focus:outline-none transition-colors">
                     <option value="dark-charcoal">🌙 Dark Charcoal</option>
                     <option value="light-clean">☀️ Clean White</option>
                     <option value="light-beige">📜 Soft Beige</option>
@@ -71,7 +71,7 @@
                     <option value="light-lavender">💜 Lavender Pastel</option>
                 </select>
 
-                <div id="stats" class="text-[11px] md:text-xs font-medium bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-700 shrink-0">
+                <div id="stats" class="text-[11px] md:text-xs font-medium px-3 py-1.5 rounded-full border shrink-0 transition-colors">
                     Due: 0 | Total: 0
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     <div id="card-content" class="text-xl md:text-2xl font-normal w-full mt-4">Select or upload a deck from the menu to begin studying!</div>
                 </div>
 
-                <!-- 4-Button Anki Rating Layout (Hidden until flipped) -->
+                <!-- 4-Button Anki Rating Layout -->
                 <div id="rating-buttons" class="hidden grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full mt-4 md:mt-6">
                     <button onclick="rateCard('again')" class="bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
                         <span>Again</span><span class="text-[10px] opacity-70 mt-0.5">(Repeat)</span>
@@ -127,28 +127,28 @@
 
     <!-- MODAL: Create Folder -->
     <div id="folder-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-zinc-100">
+        <div id="modal-box-1" class="border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <h3 class="text-lg font-bold">Create New Folder</h3>
-            <input type="text" id="folder-name-input" placeholder="Folder Name (e.g. Medicine, Semester 1)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none">
+            <input type="text" id="folder-name-input" placeholder="Folder Name (e.g. Medicine, Semester 1)" class="theme-input w-full border rounded-xl p-3 text-sm focus:outline-none">
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeModals()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg">Cancel</button>
-                <button onclick="createFolder()" class="px-4 py-2 bg-zinc-200 hover:bg-white text-zinc-900 font-semibold text-xs rounded-lg">Create</button>
+                <button onclick="closeModals()" id="modal-cancel-btn-1" class="px-4 py-2 text-xs rounded-lg transition">Cancel</button>
+                <button onclick="createFolder()" id="modal-submit-btn-1" class="px-4 py-2 font-semibold text-xs rounded-lg transition">Create</button>
             </div>
         </div>
     </div>
 
     <!-- MODAL: Compile Decks -->
     <div id="compile-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-zinc-100">
+        <div id="modal-box-2" class="border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <h3 class="text-lg font-bold">Compile Multiple Decks</h3>
-            <p class="text-xs text-zinc-400">Select decks you want to combine into a single master deck:</p>
-            <div id="compile-checkboxes" class="max-h-48 overflow-y-auto space-y-2 border border-zinc-800 p-3 rounded-xl bg-zinc-950 text-sm">
+            <p class="text-xs opacity-75">Select decks you want to combine into a single master deck:</p>
+            <div id="compile-checkboxes" class="max-h-48 overflow-y-auto space-y-2 border p-3 rounded-xl text-sm">
                 <!-- Checkboxes populated via JS -->
             </div>
-            <input type="text" id="compiled-deck-name" placeholder="Master Deck Name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-200 focus:outline-none">
+            <input type="text" id="compiled-deck-name" placeholder="Master Deck Name" class="theme-input w-full border rounded-xl p-3 text-sm focus:outline-none">
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="closeModals()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-lg">Cancel</button>
-                <button onclick="compileDecks()" class="px-4 py-2 bg-zinc-200 hover:bg-white text-zinc-900 font-semibold text-xs rounded-lg">Compile</button>
+                <button onclick="closeModals()" id="modal-cancel-btn-2" class="px-4 py-2 text-xs rounded-lg transition">Cancel</button>
+                <button onclick="compileDecks()" id="modal-submit-btn-2" class="px-4 py-2 font-semibold text-xs rounded-lg transition">Compile</button>
             </div>
         </div>
     </div>
@@ -160,46 +160,136 @@
 
         const themes = {
             'dark-charcoal': {
-                bodyBg: 'bg-zinc-900', textCol: 'text-zinc-100', mainBg: 'bg-zinc-900',
-                cardBg: 'bg-zinc-800/80 border-zinc-700/60 text-zinc-100',
+                bodyBg: 'bg-zinc-900', textCol: 'text-zinc-100',
+                sidebarBg: 'bg-zinc-950 border-zinc-800 text-zinc-100',
+                sidebarHeader: 'border-zinc-800',
+                sidebarActions: 'border-zinc-800',
+                uploadLabel: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700',
+                sidebarActionBtn: 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800',
+                sidebarFooter: 'border-zinc-800 text-zinc-400',
+                topNavbar: 'bg-zinc-900/50 border-zinc-800',
+                mobileMenuBtn: 'text-zinc-300 bg-zinc-800 border-zinc-700 hover:text-white',
+                stats: 'bg-zinc-800 border-zinc-700 text-zinc-200',
+                cardBg: 'bg-zinc-800/80 border-zinc-700/60 text-zinc-100 shadow-xl',
                 adderBg: 'bg-zinc-950/60 border-zinc-800',
                 inputBg: 'bg-zinc-900 border-zinc-800 text-zinc-200 placeholder-zinc-600',
-                btnBg: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
+                btnBg: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700',
+                modalBox: 'bg-zinc-900 border-zinc-800 text-zinc-100',
+                modalCancel: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300',
+                modalSubmit: 'bg-zinc-200 hover:bg-white text-zinc-900',
+                activeDeck: 'bg-zinc-800 text-white font-medium',
+                inactiveDeck: 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200',
+                checkboxContainer: 'border-zinc-800 bg-zinc-950'
             },
             'light-clean': {
-                bodyBg: 'bg-slate-100', textCol: 'text-slate-900', mainBg: 'bg-slate-100',
+                bodyBg: 'bg-slate-100', textCol: 'text-slate-900',
+                sidebarBg: 'bg-white border-slate-200 text-slate-800',
+                sidebarHeader: 'border-slate-200',
+                sidebarActions: 'border-slate-200',
+                uploadLabel: 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300',
+                sidebarActionBtn: 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200',
+                sidebarFooter: 'border-slate-200 text-slate-500',
+                topNavbar: 'bg-white/80 border-slate-200',
+                mobileMenuBtn: 'text-slate-700 bg-slate-100 border-slate-300 hover:text-black',
+                stats: 'bg-slate-100 border-slate-300 text-slate-700',
                 cardBg: 'bg-white border-slate-300 text-slate-800 shadow-sm',
                 adderBg: 'bg-white border-slate-300 shadow-sm',
                 inputBg: 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400',
-                btnBg: 'bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300'
+                btnBg: 'bg-slate-200 hover:bg-slate-300 text-slate-800 border-slate-300',
+                modalBox: 'bg-white border-slate-300 text-slate-900',
+                modalCancel: 'bg-slate-200 hover:bg-slate-300 text-slate-700',
+                modalSubmit: 'bg-slate-900 hover:bg-slate-800 text-white',
+                activeDeck: 'bg-slate-200 text-slate-900 font-medium',
+                inactiveDeck: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                checkboxContainer: 'border-slate-300 bg-slate-50'
             },
             'light-beige': {
-                bodyBg: 'bg-[#f5f2eb]', textCol: 'text-[#3e3a36]', mainBg: 'bg-[#f5f2eb]',
+                bodyBg: 'bg-[#f5f2eb]', textCol: 'text-[#3e3a36]',
+                sidebarBg: 'bg-[#faf8f5] border-[#e3ded6] text-[#3e3a36]',
+                sidebarHeader: 'border-[#e3ded6]',
+                sidebarActions: 'border-[#e3ded6]',
+                uploadLabel: 'bg-[#f0ece1] hover:bg-[#e7e1d3] text-[#3e3a36] border-[#d9d3c7]',
+                sidebarActionBtn: 'bg-white hover:bg-[#f0ece1] text-[#3e3a36] border-[#e3ded6]',
+                sidebarFooter: 'border-[#e3ded6] text-[#7a736d]',
+                topNavbar: 'bg-[#faf8f5]/80 border-[#e3ded6]',
+                mobileMenuBtn: 'text-[#3e3a36] bg-[#f0ece1] border-[#d9d3c7] hover:text-black',
+                stats: 'bg-[#f0ece1] border-[#d9d3c7] text-[#3e3a36]',
                 cardBg: 'bg-[#faf8f5] border-[#e3ded6] text-[#3e3a36] shadow-sm',
                 adderBg: 'bg-[#faf8f5] border-[#e3ded6] shadow-sm',
                 inputBg: 'bg-white border-[#e3ded6] text-[#3e3a36] placeholder-stone-400',
-                btnBg: 'bg-[#e3ded6] hover:bg-[#d6d0c4] text-[#3e3a36] border-[#d1ccc1]'
+                btnBg: 'bg-[#e3ded6] hover:bg-[#d6d0c4] text-[#3e3a36] border-[#d1ccc1]',
+                modalBox: 'bg-[#faf8f5] border-[#e3ded6] text-[#3e3a36]',
+                modalCancel: 'bg-[#e3ded6] hover:bg-[#d6d0c4] text-[#3e3a36]',
+                modalSubmit: 'bg-[#3e3a36] hover:bg-[#282522] text-[#faf8f5]',
+                activeDeck: 'bg-[#e3ded6] text-[#262320] font-medium',
+                inactiveDeck: 'text-[#6e6860] hover:bg-[#f0ece1] hover:text-[#3e3a36]',
+                checkboxContainer: 'border-[#e3ded6] bg-white'
             },
             'light-mint': {
-                bodyBg: 'bg-[#edf7f4]', textCol: 'text-[#1b3b32]', mainBg: 'bg-[#edf7f4]',
+                bodyBg: 'bg-[#edf7f4]', textCol: 'text-[#1b3b32]',
+                sidebarBg: 'bg-[#f4faf8] border-[#cbebe2] text-[#1b3b32]',
+                sidebarHeader: 'border-[#cbebe2]',
+                sidebarActions: 'border-[#cbebe2]',
+                uploadLabel: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32] border-[#bce5db]',
+                sidebarActionBtn: 'bg-white hover:bg-[#e2f5f0] text-[#1b3b32] border-[#cbebe2]',
+                sidebarFooter: 'border-[#cbebe2] text-[#4d7368]',
+                topNavbar: 'bg-[#f4faf8]/80 border-[#cbebe2]',
+                mobileMenuBtn: 'text-[#1b3b32] bg-[#d2efe6] border-[#bce5db] hover:text-emerald-900',
+                stats: 'bg-[#d2efe6] border-[#bce5db] text-[#1b3b32]',
                 cardBg: 'bg-white border-[#cbebe2] text-[#1b3b32] shadow-sm',
                 adderBg: 'bg-white border-[#cbebe2] shadow-sm',
                 inputBg: 'bg-[#f4faf8] border-[#cbebe2] text-[#1b3b32] placeholder-emerald-300',
-                btnBg: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32] border-[#bce5db]'
+                btnBg: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32] border-[#bce5db]',
+                modalBox: 'bg-white border-[#cbebe2] text-[#1b3b32]',
+                modalCancel: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32]',
+                modalSubmit: 'bg-[#1b3b32] hover:bg-[#122721] text-white',
+                activeDeck: 'bg-[#d2efe6] text-[#122721] font-medium',
+                inactiveDeck: 'text-[#386659] hover:bg-[#e2f5f0] hover:text-[#1b3b32]',
+                checkboxContainer: 'border-[#cbebe2] bg-[#f4faf8]'
             },
             'light-sky': {
-                bodyBg: 'bg-[#edf2f7]', textCol: 'text-[#1a365d]', mainBg: 'bg-[#edf2f7]',
+                bodyBg: 'bg-[#edf2f7]', textCol: 'text-[#1a365d]',
+                sidebarBg: 'bg-[#f8fafc] border-[#cbd5e1] text-[#1a365d]',
+                sidebarHeader: 'border-[#cbd5e1]',
+                sidebarActions: 'border-[#cbd5e1]',
+                uploadLabel: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d] border-[#cbd5e1]',
+                sidebarActionBtn: 'bg-white hover:bg-[#f1f5f9] text-[#1a365d] border-[#cbd5e1]',
+                sidebarFooter: 'border-[#cbd5e1] text-[#4a5568]',
+                topNavbar: 'bg-[#f8fafc]/80 border-[#cbd5e1]',
+                mobileMenuBtn: 'text-[#1a365d] bg-[#e2e8f0] border-[#cbd5e1] hover:text-blue-900',
+                stats: 'bg-[#e2e8f0] border-[#cbd5e1] text-[#1a365d]',
                 cardBg: 'bg-white border-[#cbd5e1] text-[#1a365d] shadow-sm',
                 adderBg: 'bg-white border-[#cbd5e1] shadow-sm',
                 inputBg: 'bg-[#f8fafc] border-[#cbd5e1] text-[#1a365d] placeholder-blue-300',
-                btnBg: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d] border-[#cbd5e1]'
+                btnBg: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d] border-[#cbd5e1]',
+                modalBox: 'bg-white border-[#cbd5e1] text-[#1a365d]',
+                modalCancel: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d]',
+                modalSubmit: 'bg-[#1a365d] hover:bg-[#102a43] text-white',
+                activeDeck: 'bg-[#e2e8f0] text-[#102a43] font-medium',
+                inactiveDeck: 'text-[#334155] hover:bg-[#f1f5f9] hover:text-[#1a365d]',
+                checkboxContainer: 'border-[#cbd5e1] bg-[#f8fafc]'
             },
             'light-lavender': {
-                bodyBg: 'bg-[#f3f0f7]', textCol: 'text-[#2e1a47]', mainBg: 'bg-[#f3f0f7]',
+                bodyBg: 'bg-[#f3f0f7]', textCol: 'text-[#2e1a47]',
+                sidebarBg: 'bg-[#faf8fd] border-[#e1d5ec] text-[#2e1a47]',
+                sidebarHeader: 'border-[#e1d5ec]',
+                sidebarActions: 'border-[#e1d5ec]',
+                uploadLabel: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47] border-[#ded2ec]',
+                sidebarActionBtn: 'bg-white hover:bg-[#f5effb] text-[#2e1a47] border-[#e1d5ec]',
+                sidebarFooter: 'border-[#e1d5ec] text-[#6b5b7a]',
+                topNavbar: 'bg-[#faf8fd]/80 border-[#e1d5ec]',
+                mobileMenuBtn: 'text-[#2e1a47] bg-[#ede5f5] border-[#ded2ec] hover:text-purple-900',
+                stats: 'bg-[#ede5f5] border-[#ded2ec] text-[#2e1a47]',
                 cardBg: 'bg-white border-[#e1d5ec] text-[#2e1a47] shadow-sm',
                 adderBg: 'bg-white border-[#e1d5ec] shadow-sm',
                 inputBg: 'bg-[#faf8fd] border-[#e1d5ec] text-[#2e1a47] placeholder-purple-300',
-                btnBg: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47] border-[#ded2ec]'
+                btnBg: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47] border-[#ded2ec]',
+                modalBox: 'bg-white border-[#e1d5ec] text-[#2e1a47]',
+                modalCancel: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47]',
+                modalSubmit: 'bg-[#2e1a47] hover:bg-[#1b102b] text-white',
+                activeDeck: 'bg-[#ede5f5] text-[#1b102b] font-medium',
+                inactiveDeck: 'text-[#5c4a70] hover:bg-[#f5effb] hover:text-[#2e1a47]',
+                checkboxContainer: 'border-[#e1d5ec] bg-[#faf8fd]'
             }
         };
 
@@ -209,24 +299,47 @@
             document.getElementById('theme-selector').value = themeKey;
 
             // Apply body classes
-            const body = document.getElementById('app-body');
-            body.className = `${t.bodyBg} ${t.textCol} h-full flex overflow-hidden relative transition-colors duration-300`;
+            document.getElementById('app-body').className = `${t.bodyBg} ${t.textCol} h-full flex overflow-hidden relative transition-colors duration-300`;
+
+            // Apply Sidebar
+            document.getElementById('sidebar').className = `fixed md:static inset-y-0 left-0 w-80 border-r flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-all duration-200 ease-in-out ${t.sidebarBg}`;
+            document.getElementById('sidebar-header').className = `p-4 border-b flex items-center justify-between ${t.sidebarHeader}`;
+            document.getElementById('sidebar-actions').className = `p-3 border-b space-y-2 ${t.sidebarActions}`;
+            document.getElementById('upload-label').className = `w-full cursor-pointer text-xs font-semibold py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 border shadow-sm ${t.uploadLabel}`;
+            
+            document.querySelectorAll('.sidebar-action-btn').forEach(btn => {
+                btn.className = `sidebar-action-btn text-xs py-1.5 px-2 rounded border transition ${t.sidebarActionBtn}`;
+            });
+            document.getElementById('sidebar-footer').className = `p-3 border-t text-xs flex justify-between ${t.sidebarFooter}`;
+
+            // Apply Top Nav
+            document.getElementById('top-navbar').className = `h-14 border-b backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300 ${t.topNavbar}`;
+            document.getElementById('mobile-menu-btn').className = `md:hidden p-2 rounded-lg border text-xs flex items-center gap-1 transition ${t.mobileMenuBtn}`;
+            document.getElementById('stats').className = `text-[11px] md:text-xs font-medium px-3 py-1.5 rounded-full border shrink-0 transition-colors ${t.stats}`;
 
             // Apply Card Box
-            const cardBox = document.getElementById('card-box');
-            cardBox.className = `w-full min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border shadow-xl overflow-auto relative group ${t.cardBg}`;
+            document.getElementById('card-box').className = `card-box-el w-full min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border overflow-auto relative group ${t.cardBg}`;
 
             // Apply Adder Section
-            const adderCard = document.getElementById('adder-card');
-            adderCard.className = `w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors ${t.adderBg}`;
+            document.getElementById('adder-card').className = `w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors ${t.adderBg}`;
 
             // Apply Inputs & Buttons
             document.querySelectorAll('.theme-input').forEach(input => {
                 input.className = `theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none ${t.inputBg}`;
             });
 
-            const adderBtn = document.getElementById('adder-btn');
-            adderBtn.className = `w-full font-medium py-2 rounded-lg transition text-xs border ${t.btnBg}`;
+            document.getElementById('adder-btn').className = `w-full font-medium py-2 rounded-lg transition text-xs border ${t.btnBg}`;
+
+            // Apply Modals
+            document.getElementById('modal-box-1').className = `border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${t.modalBox}`;
+            document.getElementById('modal-box-2').className = `border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${t.modalBox}`;
+            document.getElementById('modal-cancel-btn-1').className = `px-4 py-2 text-xs rounded-lg transition ${t.modalCancel}`;
+            document.getElementById('modal-cancel-btn-2').className = `px-4 py-2 text-xs rounded-lg transition ${t.modalCancel}`;
+            document.getElementById('modal-submit-btn-1').className = `px-4 py-2 font-semibold text-xs rounded-lg transition ${t.modalSubmit}`;
+            document.getElementById('modal-submit-btn-2').className = `px-4 py-2 font-semibold text-xs rounded-lg transition ${t.modalSubmit}`;
+            document.getElementById('compile-checkboxes').className = `max-h-48 overflow-y-auto space-y-2 border p-3 rounded-xl text-sm ${t.checkboxContainer}`;
+
+            renderSidebar();
         }
 
         let appState = JSON.parse(localStorage.getItem('web_anki_state_v1')) || {
@@ -377,6 +490,8 @@
         }
 
         function renderSidebar() {
+            const themeKey = localStorage.getItem('web_anki_theme') || 'dark-charcoal';
+            const t = themes[themeKey];
             const treeContainer = document.getElementById('sidebar-tree');
             treeContainer.innerHTML = '';
 
@@ -390,10 +505,10 @@
             if (unfiledDecks.length > 0) {
                 const unfiledDiv = document.createElement('div');
                 unfiledDiv.className = 'space-y-1';
-                unfiledDiv.innerHTML = `<div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-2">General Decks</div>`;
+                unfiledDiv.innerHTML = `<div class="text-[11px] font-semibold uppercase tracking-wider px-2 opacity-70">General Decks</div>`;
                 
                 unfiledDecks.forEach(deck => {
-                    unfiledDiv.appendChild(createDeckItemElement(deck));
+                    unfiledDiv.appendChild(createDeckItemElement(deck, t));
                 });
                 treeContainer.appendChild(unfiledDiv);
             }
@@ -406,16 +521,22 @@
                 
                 let decksHtml = '';
                 folderDecks.forEach(deck => {
-                    decksHtml += `<div onclick="selectDeck('${deck.id}')" class="pl-4 py-2 px-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${deck.id === activeDeckId ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'}">
-                        <span class="truncate">📁 ${deck.name}</span>
-                        <span class="text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400 shrink-0">${deck.cards.length}</span>
+                    const isActive = deck.id === activeDeckId;
+                    decksHtml += `<div class="pl-4 py-1.5 px-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${isActive ? t.activeDeck : t.inactiveDeck}" onclick="selectDeck('${deck.id}')">
+                        <span class="truncate">📄 ${deck.name}</span>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="text-[10px] px-1.5 py-0.5 rounded opacity-75">${deck.cards.length}</span>
+                            <button onclick="event.stopPropagation(); deleteDeck('${deck.id}')" class="text-rose-400 hover:text-rose-600 p-1" title="Delete Deck">🗑️</button>
+                        </div>
                     </div>`;
                 });
 
                 folderDiv.innerHTML = `
-                    <div class="flex items-center justify-between px-2 py-1 text-xs font-semibold text-zinc-300">
+                    <div class="flex items-center justify-between px-2 py-1 text-xs font-semibold">
                         <span>📂 ${folder.name}</span>
-                        <button onclick="deleteFolder('${folder.id}')" class="text-zinc-600 hover:text-rose-400 text-[10px] p-1">✕</button>
+                        <div class="flex items-center gap-1">
+                            <button onclick="deleteFolder('${folder.id}')" class="hover:text-rose-400 text-[10px] p-1" title="Delete Folder">🗑️ Delete Folder</button>
+                        </div>
                     </div>
                     <div class="space-y-0.5">${decksHtml}</div>
                 `;
@@ -423,18 +544,20 @@
             });
         }
 
-        function createDeckItemElement(deck) {
+        function createDeckItemElement(deck, t) {
+            const isActive = deck.id === activeDeckId;
             const div = document.createElement('div');
-            div.className = `p-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${deck.id === activeDeckId ? 'bg-zinc-800 text-white font-medium' : 'text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100'}`;
+            div.className = `p-2 rounded-lg cursor-pointer transition text-xs flex justify-between items-center ${isActive ? t.activeDeck : t.inactiveDeck}`;
             div.onclick = () => selectDeck(deck.id);
             div.innerHTML = `
                 <span class="truncate">📄 ${deck.name}</span>
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <span class="text-[10px] bg-zinc-900 px-1.5 py-0.5 rounded text-zinc-400">${deck.cards.length}</span>
-                    <select onclick="event.stopPropagation()" onchange="moveDeckToFolder('${deck.id}', this.value)" class="bg-zinc-900 text-[10px] text-zinc-400 border border-zinc-800 rounded px-1 py-0.5">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded opacity-75">${deck.cards.length} cards</span>
+                    <select onclick="event.stopPropagation()" onchange="moveDeckToFolder('${deck.id}', this.value)" class="theme-input text-[10px] border rounded px-1 py-0.5">
                         <option value="">Move...</option>
                         ${appState.folders.map(f => `<option value="${f.id}">${f.name}</option>`).join('')}
                     </select>
+                    <button onclick="event.stopPropagation(); deleteDeck('${deck.id}')" class="text-rose-400 hover:text-rose-600 p-1" title="Delete Deck">🗑️</button>
                 </div>
             `;
             return div;
@@ -457,13 +580,39 @@
             }
         }
 
+        function deleteDeck(deckId) {
+            if (appState.decks.length <= 1) {
+                alert("You must keep at least one deck in the app.");
+                return;
+            }
+            if (confirm("Are you sure you want to delete this deck and all its cards?")) {
+                appState.decks = appState.decks.filter(d => d.id !== deckId);
+                if (activeDeckId === deckId) {
+                    activeDeckId = appState.decks[0].id;
+                }
+                saveState();
+                initSession();
+            }
+        }
+
+        function deleteFolder(folderId) {
+            if (confirm("Are you sure you want to delete this folder? Decks inside it will be moved to General Decks.")) {
+                appState.folders = appState.folders.filter(f => f.id !== folderId);
+                appState.decks.forEach(d => {
+                    if (d.folderId === folderId) d.folderId = null;
+                });
+                saveState();
+                renderSidebar();
+            }
+        }
+
         function openFolderModal() { document.getElementById('folder-modal').classList.remove('hidden'); }
         function openCompileModal() {
             const container = document.getElementById('compile-checkboxes');
             container.innerHTML = appState.decks.map(d => `
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" value="${d.id}" class="compile-checkbox accent-zinc-500">
-                    <span class="text-zinc-200 text-xs">${d.name} (${d.cards.length} cards)</span>
+                    <span class="text-xs">${d.name} (${d.cards.length} cards)</span>
                 </label>
             `).join('');
             document.getElementById('compile-modal').classList.remove('hidden');
@@ -485,15 +634,6 @@
             saveState();
             nameInput.value = '';
             closeModals();
-            renderSidebar();
-        }
-
-        function deleteFolder(folderId) {
-            appState.folders = appState.folders.filter(f => f.id !== folderId);
-            appState.decks.forEach(d => {
-                if (d.folderId === folderId) d.folderId = null;
-            });
-            saveState();
             renderSidebar();
         }
 
