@@ -1,0 +1,1561 @@
+/**
+ * MedCalc Module: Oncology & Surgical Staging - Head & Neck and Digestive System Sites (ONCO-HN-GI)
+ * Fully compatible with the MedCalc HTML application structure (neuro.js architecture).
+ * Covers:
+ * 1. Head and Neck Sites:
+ *    - Lip and Oral Cavity
+ *    - HPV-Mediated (p16-positive) Oropharyngeal Cancer
+ *    - HPV-Negative Oropharyngeal Cancer and Hypopharynx
+ *    - Nasopharynx
+ *    - Larynx (Supraglottis, Glottis, Subglottis)
+ *    - Nasal Cavity and Paranasal Sinuses (Maxillary and Ethmoid)
+ *    - Major Salivary Glands (Parotid, Submandibular, Sublingual)
+ *    - Cervical Lymph Nodes and Unknown Primary Tumors of the Head and Neck
+ *    - Cutaneous Carcinoma of the Head and Neck (cSCC)
+ *    - Mucosal Melanoma of the Head and Neck
+ * 2. Digestive System Sites:
+ *    - Esophagus and Esophagogastric Junction (EGJ)
+ *    - Stomach (Gastric Carcinoma)
+ *    - Small Intestine (Duodenum, Jejunum, Ileum)
+ *    - Appendix (Carcinoma and Goblet Cell Carcinoid)
+ *    - Colon and Rectum (Colorectal Carcinoma)
+ *    - Anal Canal and Perianal Skin
+ *    - Gastrointestinal Stromal Tumor (GIST)
+ *    - Well-Differentiated Neuroendocrine Tumors (NETs) of Stomach, Duodenum/Ampulla, Jejunum/Ileum, Appendix, Colorectum, Pancreas
+ *    - Liver (Hepatocellular Carcinoma / Intrahepatic Cholangiocarcinoma)
+ *    - Gallbladder
+ *    - Intrahepatic Bile Ducts
+ *    - Perihilar Bile Ducts
+ *    - Distal Extrahepatic Bile Duct
+ *    - Ampulla of Vater
+ *    - Exocrine Pancreas (Pancreatic Ductal Adenocarcinoma)
+ */
+(function () {
+  "use strict";
+
+  var makeN = (typeof window !== "undefined" && window.N) ? window.N : function (id, label, defaultVal, extra) {
+    extra = extra || {};
+    return Object.assign({ id: id, label: label, type: "number", value: defaultVal, default: defaultVal }, extra);
+  };
+  var makeS = (typeof window !== "undefined" && window.S) ? window.S : function (id, label, defaultVal, options) {
+    options = options || [];
+    return { id: id, label: label, type: "select", value: defaultVal, default: defaultVal, options: options };
+  };
+
+  var oncoHnGiCategory = {
+    id: "onco_hn_gi",
+    name: "Head & Neck and Digestive System Staging",
+    icon: "🔬",
+    desc: "AJCC 8th/9th Edition & UICC TNM stage calculators for Head & Neck and Gastrointestinal/Hepatobiliary/Pancreatic Malignancies.",
+    organs: ["oral cavity", "oropharynx", "nasopharynx", "larynx", "sinuses", "salivary", "esophagus", "stomach", "colon", "rectum", "liver", "pancreas", "biliary"],
+    region: "head, neck and gastrointestinal oncology"
+  };
+
+  var oncoHnGiTools = [
+    // ==============================================================
+    // 1. HEAD AND NECK SITES
+    // ==============================================================
+    {
+      id: "oralCavityAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Lip and Oral Cavity Carcinoma (AJCC 8th)",
+      desc: "TNM staging for squamous cell carcinoma of lip and oral cavity incorporating Depth of Invasion (DOI) and Extranodal Extension (ENE).",
+      organ: "Lip / Oral Tongue / Floor of Mouth / Buccal",
+      region: "Head & Neck Surgical Oncology",
+      subject: "Oral Cavity Cancer",
+      keywords: ["oral cavity", "lip", "tongue", "doi", "depth of invasion", "ene", "ajcc 8th"],
+      guidance: "T-category incorporates both maximum surface dimension and Depth of Invasion (DOI): T1 (≤2cm, DOI ≤5mm); T2 (≤2cm, DOI 5-10mm or 2-4cm, DOI ≤10mm); T3 (>4cm or DOI >10mm); T4a (cortical bone, tongue deep extrinsic muscle, maxillary sinus, skin); T4b (masticator space, pterygoid plates, skull base, internal carotid).",
+      literature: [{
+        type: "AJCC 8th Consensus",
+        icon: "📄",
+        title: "International validation of the 8th edition AJCC TNM staging system for oral cavity cancer",
+        citation: "Almangush A, et al. Oral Oncol. 2020;103:104617.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/32087541/" },
+          { text: "NCI Adult Oral Cavity Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/oral-cavity-treatment-pdq" },
+          { text: "NCCN Head and Neck Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "AHNS Oral Cavity Resources ↗", url: "https://www.ahns.info/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Tumor & Depth of Invasion (T)", "T1", [
+          ["T1", "T1 — Tumor ≤ 2 cm AND Depth of Invasion (DOI) ≤ 5 mm"],
+          ["T2", "T2 — Tumor ≤ 2 cm with DOI > 5 mm to ≤ 10 mm; OR tumor > 2 cm to ≤ 4 cm with DOI ≤ 10 mm"],
+          ["T3", "T3 — Tumor > 4 cm; OR any tumor with DOI > 10 mm"],
+          ["T4a", "T4a — Moderately advanced: invades cortical bone, deep muscle of tongue, maxillary sinus, or facial skin"],
+          ["T4b", "T4b — Very advanced: invades masticator space, pterygoid plates, skull base, or encases internal carotid"]
+        ]),
+        makeS("nCat", "Regional Cervical Lymph Nodes (Clinical cN)", "N0", [
+          ["N0", "cN0 — No regional lymph node metastasis"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2a", "cN2a — Single ipsilateral node > 3 cm but ≤ 6 cm, ENE negative"],
+          ["N2b", "cN2b — Multiple ipsilateral nodes, none > 6 cm, ENE negative"],
+          ["N2c", "cN2c — Bilateral or contralateral nodes, none > 6 cm, ENE negative"],
+          ["N3a", "cN3a — Any lymph node > 6 cm, ENE negative"],
+          ["N3b", "cN3b — Single or multiple nodes with clinical Extranodal Extension (ENE+)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (lung, bone, liver)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Treatment Strategy"],
+        rows: [
+          { id: "ocI", cols: ["Stage I", "T1 N0 M0", "Primary surgical resection with transoral margin control ± elective neck dissection (END for DOI > 3-4 mm)"] },
+          { id: "ocII", cols: ["Stage II", "T2 N0 M0", "Wide local excision + ipsilateral neck dissection"] },
+          { id: "ocIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Radical compartmental resection + selective neck dissection + adjuvant radiotherapy"] },
+          { id: "ocIVA", cols: ["Stage IVA", "T4a N0-N1, or T1-T4a N2 M0", "Composite resection with microvascular free flap reconstruction + adjuvant chemoradiation (Cisplatin)"] },
+          { id: "ocIVB_C", cols: ["Stage IVB / IVC", "T4b Any N, Any T N3, or M1", "Definitive chemoradiation or palliative systemic therapy (anti-PD-1 / KEYNOTE-048)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "ocIVB_C", eq: "Distant metastatic oral cancer. Systemic immunotherapy (Pembrolizumab ± chemotherapy)." };
+        if (v.tCat === "T4b" || v.nCat.startsWith("N3")) return { value: "Stage IVB", matchId: "ocIVB_C", eq: "Very advanced local invasion or ENE+ / bulky nodal disease." };
+        if (v.tCat === "T4a" || v.nCat.startsWith("N2")) return { value: "Stage IVA", matchId: "ocIVA", eq: "Moderately advanced local disease or multi-nodal regional involvement." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "ocIII", eq: "Tumor > 4 cm, DOI > 10 mm, or single ipsilateral nodal metastasis." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "ocII", eq: "Intermediate primary tumor (2-4 cm or DOI 5-10 mm)." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "ocI", eq: "Early superficial oral cavity carcinoma." };
+      }
+    },
+    {
+      id: "hpvPositiveOropharynx",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "HPV-Mediated (p16-Positive) Oropharyngeal Carcinoma",
+      desc: "Distinct AJCC 8th Edition clinical (cTNM) and pathological (pTNM) classification reflecting favorable radio-chemosensitivity.",
+      organ: "Oropharynx (Base of Tongue, Tonsils, Soft Palate)",
+      region: "Head & Neck Oncology",
+      subject: "HPV-Mediated Oropharyngeal Cancer",
+      keywords: ["hpv", "p16", "oropharynx", "tonsil", "base of tongue", "ajcc 8th"],
+      guidance: "p16 overexpression by IHC (≥70% strong diffuse nuclear/cytoplasmic staining) defines this entity. Clinical N-staging: cN1 (ipsilateral nodes ≤6cm); cN2 (contralateral/bilateral ≤6cm); cN3 (>6cm). Notice lack of Stage IV unless distant metastatic (M1).",
+      literature: [{
+        type: "AJCC 8th Landmark Study",
+        icon: "📄",
+        title: "Validation of the 8th Edition of the AJCC/UICC Staging System for HPV-Mediated Oropharyngeal Cancer",
+        citation: "O'Sullivan B, et al. Lancet Oncol. 2016;17(4):440-451.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/26936724/" },
+          { text: "NCI Adult Oropharyngeal Cancer PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/oropharyngeal-treatment-pdq" },
+          { text: "NCCN Head and Neck Cancer Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ASCO Guidelines on HPV-Related Head and Neck Cancer ↗", url: "https://www.asco.org/practice-patients/guidelines" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Tumor Extent (T)", "T1", [
+          ["T1", "T1 — Tumor ≤ 2 cm in greatest dimension"],
+          ["T2", "T2 — Tumor > 2 cm but ≤ 4 cm in greatest dimension"],
+          ["T3", "T3 — Tumor > 4 cm OR extension to lingual surface of epiglottis"],
+          ["T4", "T4 — Invades larynx, deep muscle of tongue, medial pterygoid, hard palate, mandible, or skull base"]
+        ]),
+        makeS("cnCat", "Clinical Nodal Status (cN)", "cN0", [
+          ["cN0", "cN0 — No regional lymph node metastasis"],
+          ["cN1", "cN1 — One or more ipsilateral lymph nodes, none > 6 cm"],
+          ["cN2", "cN2 — Contralateral or bilateral lymph nodes, none > 6 cm"],
+          ["cN3", "cN3 — Lymph node(s) > 6 cm in greatest dimension"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (Stage IV)"]
+        ])
+      ],
+      table: {
+        headers: ["Clinical Stage", "TNM Grouping", "Standard Protocol"],
+        rows: [
+          { id: "hpvI", cols: ["Stage I", "T1-T2 cN0-cN1 M0", "Definitive IMRT radiotherapy alone or transoral robotic surgery (TORS) + neck dissection"] },
+          { id: "hpvII", cols: ["Stage II", "T1-T2 cN2, or T3 cN0-cN2 M0", "Definitive concurrent chemoradiotherapy (Cisplatin + IMRT) or TORS + risk-adapted adjuvant therapy"] },
+          { id: "hpvIII", cols: ["Stage III", "T4 or cN3 M0", "Concurrent high-dose Cisplatin + IMRT; clinical trials for de-escalation"] },
+          { id: "hpvIV", cols: ["Stage IV", "Any T Any N M1", "Systemic immunotherapy (Pembrolizumab) ± platinum chemotherapy"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Clinical Stage IV (M1)", matchId: "hpvIV", eq: "Distant metastatic p16+ oropharyngeal cancer." };
+        if (v.tCat === "T4" || v.cnCat === "cN3") return { value: "Clinical Stage III", matchId: "hpvIII", eq: "Advanced primary tumor or bulky nodes > 6 cm." };
+        if (v.tCat === "T3" || v.cnCat === "cN2") return { value: "Clinical Stage II", matchId: "hpvII", eq: "Bilateral/contralateral nodes or T3 primary tumor." };
+        return { value: "Clinical Stage I (T1-T2 cN0-cN1 M0)", matchId: "hpvI", eq: "Early HPV-mediated cancer with favorable long-term overall survival (>85-90%)." };
+      }
+    },
+    {
+      id: "hpvNegOropharynxHypopharynx",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "HPV-Negative Oropharyngeal Cancer & Hypopharynx",
+      desc: "AJCC 8th staging for traditional smoking/alcohol-associated oropharyngeal carcinoma (p16-negative) and hypopharyngeal carcinoma.",
+      organ: "Hypopharynx / HPV-neg Oropharynx",
+      region: "Head & Neck Oncology",
+      subject: "HPV-Negative Head & Neck Cancer",
+      keywords: ["hpv-negative", "hypopharynx", "pyriform sinus", "postcricoid", "p16-negative", "ajcc 8th"],
+      guidance: "Hypopharynx sub-sites: Pyriform sinus, postcricoid area, posterior pharyngeal wall. Hypopharynx T1 ≤2cm (1 subsite); T2 2-4cm or >1 subsite; T3 >4cm or hemilarynx fixation; T4a thyroid/cricoid cartilage, hyoid, thyroid gland, strap muscles; T4b prevertebral fascia, carotid encasement.",
+      literature: [{
+        type: "Clinical Guidelines",
+        icon: "📄",
+        title: "Prognostic impact of the 8th edition AJCC staging in HPV-negative head and neck carcinoma",
+        citation: "Huang SH, et al. Cancer. 2018;124(11):2327-2339.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29579331/" },
+          { text: "NCI Hypopharyngeal Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/hypopharyngeal-treatment-pdq" },
+          { text: "NCCN Head and Neck Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "EHNS European Head and Neck Society ↗", url: "https://ehns.org/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Tumor Extent (T)", "T1", [
+          ["T1", "T1 — Tumor ≤ 2 cm, confined to 1 subsite"],
+          ["T2", "T2 — Tumor > 2 cm to ≤ 4 cm, or invades more than 1 subsite without hemilarynx fixation"],
+          ["T3", "T3 — Tumor > 4 cm OR with hemilarynx fixation or esophageal extension"],
+          ["T4a", "T4a — Invades thyroid/cricoid cartilage, hyoid bone, thyroid gland, or strap muscles"],
+          ["T4b", "T4b — Invades prevertebral fascia, encases carotid artery, or mediastinal structures"]
+        ]),
+        makeS("nCat", "Regional Nodes (cN)", "N0", [
+          ["N0", "cN0 — Regional nodes negative"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2a_b", "cN2a-b — Single ipsilateral >3 to ≤6 cm OR multiple ipsilateral ≤6 cm, ENE-"],
+          ["N2c", "cN2c — Bilateral or contralateral nodes ≤ 6 cm, ENE-"],
+          ["N3", "cN3 — Node > 6 cm (N3a) or clinical Extranodal Extension ENE+ (N3b)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Grouping", "Intervention"],
+        rows: [
+          { id: "negI", cols: ["Stage I", "T1 N0 M0", "Definitive radiotherapy or transoral endoscopic resection"] },
+          { id: "negII", cols: ["Stage II", "T2 N0 M0", "Definitive IMRT or partial pharyngectomy"] },
+          { id: "negIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Concurrent Chemoradiotherapy (organ preservation) or Total Laryngopharyngectomy"] },
+          { id: "negIVA", cols: ["Stage IVA", "T4a N0-N1, or T1-T4a N2 M0", "Concurrent Chemoradiation or total laryngopharyngectomy + neck dissection"] },
+          { id: "negIVB_C", cols: ["Stage IVB / IVC", "T4b Any N, Any T N3, or M1", "Palliative chemotherapy / anti-PD-1 (Pembrolizumab)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "negIVB_C", eq: "Distant metastatic disease." };
+        if (v.tCat === "T4b" || v.nCat === "N3") return { value: "Stage IVB", matchId: "negIVB_C", eq: "Locally unresectable / prevertebral invasion or ENE+." };
+        if (v.tCat === "T4a" || v.nCat === "N2a_b" || v.nCat === "N2c") return { value: "Stage IVA", matchId: "negIVA", eq: "Cartilage invasion or multi-nodal metastasis." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "negIII", eq: "Hemilarynx fixation or single ipsilateral node." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "negII", eq: "Tumor 2-4 cm or multiple subsites." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "negI", eq: "Early superficial tumor." };
+      }
+    },
+    {
+      id: "nasopharynxAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Nasopharyngeal Carcinoma (NPC - AJCC 8th)",
+      desc: "EBV-associated endemic and non-endemic nasopharyngeal carcinoma staging.",
+      organ: "Nasopharynx / Fossa of Rosenmüller",
+      region: "Head & Neck Oncology",
+      subject: "Nasopharyngeal Carcinoma",
+      keywords: ["npc", "nasopharynx", "ebv", "rosenmuller", "gemcitabine", "cisplatin", "ajcc 8th"],
+      guidance: "T1 confined to nasopharynx / oropharynx / nasal cavity; T2 parapharyngeal extension; T3 bony skull base, pterygoid, paranasal sinuses; T4 intracranial, cranial nerves, hypopharynx, orbit, parotid. N1 unilateral cervical / bilateral retropharyngeal ≤6cm; N2 bilateral cervical ≤6cm; N3 >6cm or below caudal border of cricoid cartilage.",
+      literature: [{
+        type: "Consensus Guidelines",
+        icon: "📄",
+        title: "Comparison of the 7th and 8th editions of the UICC/AJCC TNM staging system for nasopharyngeal carcinoma",
+        citation: "Tang LL, et al. Lancet Oncol. 2016;17(4):452-460.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/26936725/" },
+          { text: "NCI Nasopharyngeal Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/nasopharyngeal-treatment-pdq" },
+          { text: "NCCN Nasopharyngeal Cancer Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "Chinese Society of Clinical Oncology (CSCO) NPC Guidelines ↗", url: "https://www.csco.org.cn/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Nasopharyngeal Tumor (T)", "T1", [
+          ["T1", "T1 — Confined to nasopharynx, or extends to oropharynx/nasal cavity without parapharyngeal involvement"],
+          ["T2", "T2 — Infiltrates parapharyngeal space, or prevertebral muscle, or medial pterygoid"],
+          ["T3", "T3 — Infiltrates bony structures of skull base, cervical vertebra, pterygoid structures, or paranasal sinuses"],
+          ["T4", "T4 — Intracranial extension, cranial nerve palsy, hypopharynx, orbit, parotid gland, or extensive lateral pterygoid"]
+        ]),
+        makeS("nCat", "Regional Cervical/Retropharyngeal Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Unilateral cervical lymph nodes ≤ 6 cm, and/or unilateral or bilateral retropharyngeal nodes ≤ 6 cm (above caudal cricoid)"],
+          ["N2", "N2 — Bilateral cervical lymph nodes ≤ 6 cm, above caudal border of cricoid cartilage"],
+          ["N3", "N3 — Cervical lymph node(s) > 6 cm, OR extension below caudal border of cricoid cartilage (supraclavicular fossa)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (bone, liver, lung)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Grouping", "Standard Clinical Protocol"],
+        rows: [
+          { id: "npcI", cols: ["Stage I", "T1 N0 M0", "Definitive IMRT radiotherapy alone (excellent disease control >95%)"] },
+          { id: "npcII", cols: ["Stage II", "T2 N0, or T1-T2 N1 M0", "Concurrent Chemoradiotherapy (Cisplatin + IMRT) or IMRT alone"] },
+          { id: "npcIII", cols: ["Stage III", "T3 N0-N2, or T1-T2 N2 M0", "Induction Chemotherapy (Gemcitabine + Cisplatin) followed by concurrent chemoradiotherapy"] },
+          { id: "npcIVA", cols: ["Stage IVA", "T4 or N3 M0", "Induction GemCis + definitive concurrent chemoradiotherapy + adjuvant Capecitabine"] },
+          { id: "npcIVB", cols: ["Stage IVB", "Any T Any N M1", "First-line Gemcitabine + Cisplatin + anti-PD-1 (Toripalimab / Pembrolizumab)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVB (M1)", matchId: "npcIVB", eq: "Distant metastatic NPC. Gemcitabine + Cisplatin + Toripalimab / anti-PD-1." };
+        if (v.tCat === "T4" || v.nCat === "N3") return { value: "Stage IVA", matchId: "npcIVA", eq: "Intracranial/cranial nerve invasion or supraclavicular/bulky (>6cm) nodes." };
+        if (v.tCat === "T3" || v.nCat === "N2") return { value: "Stage III", matchId: "npcIII", eq: "Skull base bony invasion or bilateral cervical lymph nodes." };
+        if (v.tCat === "T2" || v.nCat === "N1") return { value: "Stage II", matchId: "npcII", eq: "Parapharyngeal space extension or unilateral/retropharyngeal nodal spread." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "npcI", eq: "Organ-confined nasopharyngeal carcinoma." };
+      }
+    },
+    {
+      id: "larynxCancerAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Laryngeal Carcinoma (Supraglottis, Glottis, Subglottis)",
+      desc: "AJCC 8th staging system covering cord mobility, cartilage erosion, and subsite distribution.",
+      organ: "Larynx (Vocal Cords / Epiglottis / Subglottis)",
+      region: "Head & Neck Surgery",
+      subject: "Laryngeal Cancer",
+      keywords: ["larynx", "glottis", "supraglottis", "subglottis", "vocal cord", "paraglottic", "ajcc 8th"],
+      guidance: "Glottis: T1a (1 cord), T1b (both cords); T2 (subglottis/supraglottis extension or impaired cord mobility); T3 (cord fixation or paraglottic space / minor thyroid cartilage invasion); T4a (through thyroid cartilage, trachea, strap muscles); T4b (prevertebral, carotid).",
+      literature: [{
+        type: "Consensus Reference",
+        icon: "📄",
+        title: "AJCC 8th Edition Staging for Larynx Cancer",
+        citation: "Amin MB, et al. AJCC Cancer Staging Manual. 8th ed. 2017.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28097561/" },
+          { text: "NCI Adult Laryngeal Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/laryngeal-treatment-pdq" },
+          { text: "NCCN Head and Neck Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "American Laryngological Association Guidelines ↗", url: "https://alahns.org/" }
+        ]
+      }],
+      fields: [
+        makeS("subsite", "Laryngeal Anatomical Subsite", "glottis", [
+          ["glottis", "Glottis (True vocal cords and anterior commissure)"],
+          ["supraglottis", "Supraglottis (Epiglottis, aryepiglottic folds, false cords, ventricles)"],
+          ["subglottis", "Subglottis (Below true vocal cords to inferior cricoid border)"]
+        ]),
+        makeS("tCat", "Primary Laryngeal Tumor (T)", "T1", [
+          ["T1", "T1 — Limited to subsite of origin, normal vocal cord mobility (T1a one cord, T1b both cords)"],
+          ["T2", "T2 — Extension to adjacent subsite, or impaired vocal cord mobility"],
+          ["T3", "T3 — True vocal cord fixation, OR paraglottic space invasion, OR minor thyroid cartilage erosion"],
+          ["T4a", "T4a — Infiltrates through thyroid cartilage and/or extends into strap muscles, trachea, esophagus"],
+          ["T4b", "T4b — Infiltrates prevertebral fascia, encases carotid artery, or invades mediastinum"]
+        ]),
+        makeS("nCat", "Regional Cervical Lymph Nodes (cN)", "N0", [
+          ["N0", "cN0 — Regional nodes negative"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2", "cN2 — Ipsilateral >3 to ≤6 cm (N2a), multiple ipsilateral ≤6 cm (N2b), or bilateral/contralateral ≤6 cm (N2c)"],
+          ["N3", "cN3 — Node > 6 cm (N3a) or clinical Extranodal Extension ENE+ (N3b)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Clinical Pathway"],
+        rows: [
+          { id: "larI", cols: ["Stage I", "T1 N0 M0", "Transoral laser microsurgery (TLM) or definitive radiation therapy (voice preservation >90%)"] },
+          { id: "larII", cols: ["Stage II", "T2 N0 M0", "Definitive radiotherapy or transoral partial laryngectomy"] },
+          { id: "larIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Concurrent Chemoradiotherapy (organ preservation protocol) or Total Laryngectomy if dysfunctional larynx"] },
+          { id: "larIVA", cols: ["Stage IVA", "T4a N0-N1, or T1-T4a N2 M0", "Total Laryngectomy + bilateral neck dissection + adjuvant RT/CCRT, or definitive CCRT"] },
+          { id: "larIVB_C", cols: ["Stage IVB / IVC", "T4b Any N, Any T N3, or M1", "Palliative chemotherapy / anti-PD-1 (Pembrolizumab)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "larIVB_C", eq: "Distant metastatic laryngeal cancer." };
+        if (v.tCat === "T4b" || v.nCat === "N3") return { value: "Stage IVB", matchId: "larIVB_C", eq: "Very advanced local disease (prevertebral / carotid) or ENE+." };
+        if (v.tCat === "T4a" || v.nCat === "N2") return { value: "Stage IVA", matchId: "larIVA", eq: "Gross cartilage breach or multiple/contralateral cervical nodes." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "larIII", eq: "Vocal cord fixation or single ipsilateral node." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "larII", eq: "Impaired cord mobility or multi-subsite extension." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "larI", eq: "Early mobile vocal cord tumor." };
+      }
+    },
+    {
+      id: "sinonasalCancerAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Nasal Cavity & Paranasal Sinuses (Maxillary & Ethmoid)",
+      desc: "AJCC 8th staging for carcinomas of maxillary sinus and ethmoid sinus / nasal cavity.",
+      organ: "Maxillary Sinus / Ethmoid Sinus / Nasal Cavity",
+      region: "Head & Neck Surgery",
+      subject: "Sinonasal Carcinomas",
+      keywords: ["maxillary sinus", "ethmoid", "sinonasal", "cribriform plate", "orbit", "ajcc 8th"],
+      guidance: "Maxillary: T1 mucosa of antrum; T2 bone erosion of hard palate/middle meatus; T3 posterior wall, subQ tissue, orbit floor; T4a anterior orbit, facial skin, pterygoid plates; T4b orbital apex, dura, brain, clivus. Ethmoid: T1 confined to ethmoid; T2 extends to nasal cavity; T3 anterior orbit/maxillary sinus; T4a cribriform plate, dura; T4b brain, orbital apex.",
+      literature: [{
+        type: "Sinonasal Staging Standard",
+        icon: "📄",
+        title: "AJCC Cancer Staging Manual 8th Edition: Nasal Cavity and Paranasal Sinuses",
+        citation: "Amin MB, et al. AJCC Cancer Staging Manual. 8th ed. 2017.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28097561/" },
+          { text: "NCI Paranasal Sinus and Nasal Cavity Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/paranasal-sinus-treatment-pdq" },
+          { text: "NCCN Head and Neck Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "American Rhinologic Society Oncology Guidelines ↗", url: "https://www.american-rhinologic.org/" }
+        ]
+      }],
+      fields: [
+        makeS("subsite", "Sinonasal Subsite", "maxillary", [
+          ["maxillary", "Maxillary Sinus"],
+          ["ethmoid", "Ethmoid Sinus / Nasal Cavity"]
+        ]),
+        makeS("tCat", "Primary Sinonasal Extent (T)", "T1", [
+          ["T1", "T1 — Confined to mucosa of origin, no bone erosion"],
+          ["T2", "T2 — Bone erosion/destruction (hard palate or middle meatus in maxillary; nasal cavity in ethmoid)"],
+          ["T3", "T3 — Invades bone of posterior maxillary wall, ethmoid, facial subQ tissue, or medial/inferior orbit wall"],
+          ["T4a", "T4a — Invades anterior orbit, skin of cheek, pterygoid plates, infratemporal fossa, or cribriform plate"],
+          ["T4b", "T4b — Invades orbital apex, dura, brain, middle cranial fossa, cranial nerves, clivus, or nasopharynx"]
+        ]),
+        makeS("nCat", "Regional Nodes (cN)", "N0", [
+          ["N0", "cN0 — Regional nodes negative"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2", "cN2 — Multiple ipsilateral, contralateral, or bilateral nodes ≤ 6 cm, ENE-"],
+          ["N3", "cN3 — Node > 6 cm (N3a) or clinical ENE+ (N3b)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Intervention"],
+        rows: [
+          { id: "snI", cols: ["Stage I", "T1 N0 M0", "Endoscopic endonasal resection or infrastructure maxillectomy"] },
+          { id: "snII", cols: ["Stage II", "T2 N0 M0", "Complete surgical resection (subtotal maxillectomy) ± adjuvant radiation"] },
+          { id: "snIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Craniofacial / radical maxillectomy + postoperative IMRT / proton beam therapy"] },
+          { id: "snIVA", cols: ["Stage IVA", "T4a N0-N1, or T1-T4a N2 M0", "Radical compartmental resection with orbital exenteration if involved + adjuvant CCRT"] },
+          { id: "snIVB_C", cols: ["Stage IVB / IVC", "T4b Any N, Any T N3, or M1", "Definitive chemotherapy / radiation (often unresectable) or clinical trial"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "snIVB_C", eq: "Distant metastatic sinonasal carcinoma." };
+        if (v.tCat === "T4b" || v.nCat === "N3") return { value: "Stage IVB", matchId: "snIVB_C", eq: "Very advanced local disease (orbital apex, dura, brain, clivus)." };
+        if (v.tCat === "T4a" || v.nCat === "N2") return { value: "Stage IVA", matchId: "snIVA", eq: "Moderately advanced local invasion or multi-nodal metastasis." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "snIII", eq: "Bone erosion into orbit or single regional node." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "snII", eq: "Bone erosion confined to palate/meatus." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "snI", eq: "Early mucosal sinonasal cancer." };
+      }
+    },
+    {
+      id: "salivaryGlandCancerAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Major Salivary Gland Carcinomas (Parotid, Submandibular, Sublingual)",
+      desc: "AJCC 8th staging for mucoepidermoid, adenoid cystic, and salivary duct carcinomas.",
+      organ: "Parotid / Submandibular / Sublingual",
+      region: "Head & Neck Surgery",
+      subject: "Salivary Gland Malignancies",
+      keywords: ["parotid", "salivary", "submandibular", "facial nerve", "adenoid cystic", "mucoepidermoid", "ajcc 8th"],
+      guidance: "T1 ≤ 2 cm, no extraparenchymal extension (EPE); T2 > 2 to ≤ 4 cm, no EPE; T3 > 4 cm and/or soft tissue extraparenchymal extension; T4a invades skin, mandible, ear canal, or facial nerve; T4b skull base, pterygoid plates, or encases carotid.",
+      literature: [{
+        type: "Consensus Reference",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging System for Major Salivary Gland Carcinomas",
+        citation: "Aro K, et al. Head Neck. 2019;41(1):173-181.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/30537402/" },
+          { text: "NCI Salivary Gland Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck/hp/adult/salivary-gland-treatment-pdq" },
+          { text: "NCCN Salivary Gland Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "AHNS Salivary Section Portal ↗", url: "https://www.ahns.info/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Salivary Tumor (T)", "T1", [
+          ["T1", "T1 — Tumor ≤ 2 cm in greatest dimension without extraparenchymal extension"],
+          ["T2", "T2 — Tumor > 2 cm but ≤ 4 cm in greatest dimension without extraparenchymal extension"],
+          ["T3", "T3 — Tumor > 4 cm AND/OR having extraparenchymal extension into periglandular soft tissue"],
+          ["T4a", "T4a — Invades skin, mandible, external auditory canal, and/or facial nerve (CN VII)"],
+          ["T4b", "T4b — Invades skull base, pterygoid plates, or encases carotid artery"]
+        ]),
+        makeS("nCat", "Regional Cervical Nodes (cN)", "N0", [
+          ["N0", "cN0 — Regional nodes negative"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2", "cN2 — Ipsilateral >3 to ≤6 cm, or multiple ipsilateral, or bilateral/contralateral ≤6 cm, ENE-"],
+          ["N3", "cN3 — Node > 6 cm (N3a) or clinical ENE+ (N3b)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (lung in adenoid cystic carcinoma)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Management"],
+        rows: [
+          { id: "sgI", cols: ["Stage I", "T1 N0 M0", "Superficial/total parotidectomy with facial nerve preservation"] },
+          { id: "sgII", cols: ["Stage II", "T2 N0 M0", "Total parotidectomy / submandibular gland excision ± neck dissection"] },
+          { id: "sgIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Extended parotidectomy + neck dissection + postoperative radiotherapy"] },
+          { id: "sgIVA", cols: ["Stage IVA", "T4a N0-N1, or T1-T4a N2 M0", "Radical parotidectomy with facial nerve sacrifice/grafting + neck dissection + PORT"] },
+          { id: "sgIVB_C", cols: ["Stage IVB / IVC", "T4b Any N, Any T N3, or M1", "Palliative chemotherapy / Androgen Receptor targeted therapy (for Salivary Duct Carcinoma) / Lenvatinib"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "sgIVB_C", eq: "Distant metastatic salivary carcinoma." };
+        if (v.tCat === "T4b" || v.nCat === "N3") return { value: "Stage IVB", matchId: "sgIVB_C", eq: "Very advanced local skull base invasion or ENE+." };
+        if (v.tCat === "T4a" || v.nCat === "N2") return { value: "Stage IVA", matchId: "sgIVA", eq: "Facial nerve or bone invasion, or multi-nodal metastasis." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "sgIII", eq: "Extraparenchymal extension, tumor >4cm, or single ipsilateral node." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "sgII", eq: "Tumor 2-4 cm confined to gland." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "sgI", eq: "Small organ-confined tumor." };
+      }
+    },
+    {
+      id: "unknownPrimaryNeckNodes",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Cervical Nodes & Unknown Primary Tumors of Head & Neck",
+      desc: "AJCC 8th staging algorithm for metastatic cervical adenopathy without an identified primary tumor (CUP-H&N).",
+      organ: "Cervical Lymph Nodes / Waldeyer Ring",
+      region: "Head & Neck Surgical Oncology",
+      subject: "Carcinoma of Unknown Primary in Head & Neck",
+      keywords: ["unknown primary", "cup", "cervical adenopathy", "ebv", "hpv", "p16", "ajcc 8th"],
+      guidance: "Must be segregated by viral etiology: 1) HPV/p16-positive (staged as clinical HPV+ oropharyngeal cT0); 2) EBV-positive (staged as nasopharyngeal cT0); 3) HPV-negative / EBV-negative (staged under traditional Head & Neck nodal classification with ENE).",
+      literature: [{
+        type: "Consensus Staging",
+        icon: "📄",
+        title: "Carcinoma of Unknown Primary in the Head and Neck: AJCC 8th Edition Updates",
+        citation: "Lydiatt WM, et al. CA Cancer J Clin. 2017;67(2):122-137.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28128848/" },
+          { text: "NCI Head and Neck Unknown Primary PDQ ↗", url: "https://www.cancer.gov/types/head-and-neck" },
+          { text: "NCCN Head and Neck Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "AHNS Unknown Primary Consensus Statement ↗", url: "https://www.ahns.info/" }
+        ]
+      }],
+      fields: [
+        makeS("biomarker", "Node Viral Biomarker Testing", "hpv_pos", [
+          ["hpv_pos", "p16 / HPV-positive (presumed occult oropharynx)"],
+          ["ebv_pos", "EBER / EBV-positive (presumed occult nasopharynx)"],
+          ["neg", "p16-negative AND EBV-negative (traditional squamous cell carcinoma)"]
+        ]),
+        makeS("nCat", "Cervical Nodal Extent", "single_small", [
+          ["single_small", "Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["ipsi_mid", "Single ipsilateral node > 3 cm to ≤ 6 cm, ENE negative"],
+          ["multi_ipsi", "Multiple ipsilateral nodes, none > 6 cm, ENE negative"],
+          ["bilat", "Bilateral or contralateral nodes, none > 6 cm, ENE negative"],
+          ["bulky", "Node(s) > 6 cm in dimension, ENE negative"],
+          ["ene_pos", "Extranodal Extension present (clinically overt ENE+)"]
+        ]),
+        makeS("mCat", "Distant Metastasis", "M0", [
+          ["M0", "M0 — Distant metastasis absent"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Etiology", "Assigned Stage", "Diagnostic & Therapeutic Workup"],
+        rows: [
+          { id: "cupHPV", cols: ["p16 / HPV-positive", "Clinical Stage I or II (Oropharynx Rules)", "Transoral robotic lingual/palatine mucosectomy + bilateral neck irradiation"] },
+          { id: "cupEBV", cols: ["EBV-positive", "Clinical Stage II or III (Nasopharynx Rules)", "High-dose IMRT targeted to nasopharynx and bilateral neck lymphatic stations"] },
+          { id: "cupNeg", cols: ["HPV-neg / EBV-neg", "Stage III to IVB (Traditional ENE Rules)", "Comprehensive bilateral neck dissection + adjuvant chemoradiation to Waldeyer ring"] },
+          { id: "cupM1", cols: ["Distant Metastatic (M1)", "Stage IV / IVC", "Systemic immunotherapy + platinum doublet"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "cupM1", eq: "Distant metastatic carcinoma of unknown primary." };
+        if (v.biomarker === "hpv_pos") {
+          var isStg1 = (v.nCat === "single_small" || v.nCat === "ipsi_mid" || v.nCat === "multi_ipsi");
+          return {
+            value: isStg1 ? "HPV+ CUP: Clinical Stage I (T0 N1 M0)" : "HPV+ CUP: Clinical Stage II (T0 N2 M0)",
+            matchId: "cupHPV",
+            eq: "Staged under HPV+ oropharyngeal rules. High cure rate with mucosal-directed chemoradiotherapy."
+          };
+        }
+        if (v.biomarker === "ebv_pos") {
+          return { value: "EBV+ CUP: Clinical Stage II / III", matchId: "cupEBV", eq: "Staged under nasopharyngeal rules. Presumed occult fossa of Rosenmüller primary." };
+        }
+        var matchNeg = (v.nCat === "ene_pos" || v.nCat === "bulky") ? "Stage IVB" : (v.nCat === "bilat" || v.nCat === "ipsi_mid" || v.nCat === "multi_ipsi") ? "Stage IVA" : "Stage III";
+        return { value: "HPV-/EBV- CUP: " + matchNeg, matchId: "cupNeg", eq: "Aggressive biology; comprehensive mucosal and bilateral neck radiation required." };
+      }
+    },
+    {
+      id: "cutaneousScHeadNeck",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Cutaneous Carcinoma of Head & Neck (cSCC)",
+      desc: "AJCC 8th Edition staging for cutaneous squamous cell carcinoma arising on the scalp, face, ears, and neck.",
+      organ: "Head & Neck Skin / Dermis",
+      region: "Dermatologic / Head & Neck Oncology",
+      subject: "Head & Neck Cutaneous SCC",
+      keywords: ["cscc", "cutaneous squamous", "head and neck skin", "perineural", "parotid node", "ajcc 8th"],
+      guidance: "T1 ≤2cm; T2 >2 to ≤4cm; T3 >4cm or minor bone erosion or perineural invasion (nerve caliber ≥0.1mm) or deep invasion (>6mm); T4a gross cortical bone invasion; T4b skull base or skull base foramen. Note high risk of intra-parotid lymph node metastasis.",
+      literature: [{
+        type: "AJCC 8th Dermatology Standard",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging for Cutaneous Squamous Cell Carcinoma of the Head and Neck",
+        citation: "Brunner M, et al. Eur J Surg Oncol. 2021;47(2):414-420.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/32958349/" },
+          { text: "NCI Nonmelanoma Skin Cancer PDQ ↗", url: "https://www.cancer.gov/types/skin/hp/skin-treatment-pdq" },
+          { text: "NCCN Squamous Cell Skin Cancer Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "Skin Cancer Foundation Medical Portal ↗", url: "https://www.skincancer.org/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Cutaneous SCC Extent (T)", "T1", [
+          ["T1", "T1 — Maximum dimension ≤ 2 cm, no high-risk features"],
+          ["T2", "T2 — Maximum dimension > 2 cm but ≤ 4 cm"],
+          ["T3", "T3 — Dimension > 4 cm; OR minor bone erosion; OR perineural invasion (≥0.1mm); OR deep invasion (>6mm / beyond subcutaneous fat)"],
+          ["T4a", "T4a — Gross cortical bone or marrow invasion"],
+          ["T4b", "T4b — Skull base invasion or skull base foramen axial perineural invasion"]
+        ]),
+        makeS("nCat", "Regional Nodes (Parotid & Cervical Nodes)", "N0", [
+          ["N0", "cN0 — Regional nodes negative"],
+          ["N1", "cN1 — Single ipsilateral node ≤ 3 cm, ENE negative"],
+          ["N2", "cN2 — Single node >3 to ≤6 cm, or multiple ipsilateral, or bilateral/contralateral ≤6 cm, ENE-"],
+          ["N3", "cN3 — Node > 6 cm (N3a) or clinical ENE+ (N3b)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Management"],
+        rows: [
+          { id: "hncI", cols: ["Stage I", "T1 N0 M0", "Mohs micrographic surgery or wide local excision with 4-6 mm clear margins"] },
+          { id: "hncII", cols: ["Stage II", "T2 N0 M0", "Wide local excision with margin control; consider sentinel node biopsy"] },
+          { id: "hncIII", cols: ["Stage III", "T3 N0 or T1-T3 N1 M0", "Wide resection + superficial parotidectomy / neck dissection + adjuvant radiation"] },
+          { id: "hncIV", cols: ["Stage IV", "T4, N2-N3, or M1", "Cemiplimab (anti-PD-1) or Pembrolizumab systemic immunotherapy"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1" || v.tCat.startsWith("T4") || v.nCat === "N2" || v.nCat === "N3") return { value: "Stage IV", matchId: "hncIV", eq: "Advanced cSCC with bone/skull base invasion or extensive nodes. Cemiplimab indicated." };
+        if (v.tCat === "T3" || v.nCat === "N1") return { value: "Stage III", matchId: "hncIII", eq: "High risk due to deep/perineural invasion or single nodal metastasis." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "hncII", eq: "Intermediate tumor (2-4 cm)." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "hncI", eq: "Low risk superficial facial/scalp SCC." };
+      }
+    },
+    {
+      id: "mucosalMelanomaHeadNeck",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Mucosal Melanoma of the Head and Neck (AJCC 8th)",
+      desc: "Staging for aggressive sinonasal and oral mucosal melanomas; classified only as Stage III, IVA, IVB, or IVC.",
+      organ: "Sinonasal / Oral Cavity Mucosa",
+      region: "Head & Neck Oncology",
+      subject: "Mucosal Melanoma",
+      keywords: ["mucosal melanoma", "sinonasal melanoma", "kit", "braf", "ajcc 8th"],
+      guidance: "Reflecting intrinsically lethal biology, mucosal melanomas have NO Stage I or II. T3: Mucosa-confined; T4a: Involves deep cartilage, bone, skin; T4b: Involves brain, dura, skull base, carotid.",
+      literature: [{
+        type: "Consensus Guidelines",
+        icon: "📄",
+        title: "Head and neck mucosal melanoma: The 8th edition AJCC staging and treatment paradigm",
+        citation: "López F, et al. Oral Oncol. 2020;105:104664.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/32247265/" },
+          { text: "NCI Melanoma Health Professional PDQ ↗", url: "https://www.cancer.gov/types/skin/hp/melanoma-treatment-pdq" },
+          { text: "NCCN Head and Neck Cancers Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO Clinical Practice Guidelines for Mucosal Melanoma ↗", url: "https://www.esmo.org/guidelines/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Mucosal Melanoma Extent (T)", "T3", [
+          ["T3", "T3 — Mucosa-confined mucosal melanoma (all localized tumors start at T3)"],
+          ["T4a", "T4a — Involves deep soft tissue, cartilage, bone, overlying skin, or orbit"],
+          ["T4b", "T4b — Involves brain, dura mater, skull base, lower cranial nerves, or carotid artery"]
+        ]),
+        makeS("nCat", "Regional Cervical Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Regional lymph node metastasis present (automatically Stage IVA)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (Stage IVC)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage Group", "TNM Criteria", "Therapeutic Protocol"],
+        rows: [
+          { id: "mmIII", cols: ["Stage III", "T3 N0 M0", "Complete wide surgical resection with negative margins + adjuvant proton or photon radiotherapy"] },
+          { id: "mmIVA", cols: ["Stage IVA", "T4a N0, or T3-T4a N1 M0", "Radical compartmental resection + neck dissection + postoperative radiotherapy ± Nivolumab"] },
+          { id: "mmIVB", cols: ["Stage IVB", "T4b Any N M0", "Unresectable local disease; dual immunotherapy (Nivolumab + Ipilimumab) or carbon ion therapy"] },
+          { id: "mmIVC", cols: ["Stage IVC", "Any T Any N M1", "Dual checkpoint blockade (Nivo + Ipi) or targeted therapy if KIT/BRAF mutated"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVC (M1)", matchId: "mmIVC", eq: "Distant metastatic mucosal melanoma. Screen for KIT mutations." };
+        if (v.tCat === "T4b") return { value: "Stage IVB (T4b)", matchId: "mmIVB", eq: "Locally unresectable / skull base or intracranial invasion." };
+        if (v.tCat === "T4a" || v.nCat === "N1") return { value: "Stage IVA", matchId: "mmIVA", eq: "Locally moderately advanced or lymph node-positive mucosal melanoma." };
+        return { value: "Stage III (T3 N0 M0)", matchId: "mmIII", eq: "Mucosa-confined tumor (earliest stage for mucosal melanoma)." };
+      }
+    },
+
+    // ==============================================================
+    // 2. DIGESTIVE SYSTEM SITES
+    // ==============================================================
+    {
+      id: "esophagusEGJCancer",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Esophagus & Esophagogastric Junction (EGJ Carcinoma)",
+      desc: "AJCC 8th clinical (cTNM) and pathologic (pTNM) staging for squamous cell carcinoma and adenocarcinoma of esophagus and EGJ (Siewert I/II).",
+      organ: "Esophagus / Siewert I-II EGJ",
+      region: "Gastrointestinal Oncology",
+      subject: "Esophageal Malignancies",
+      keywords: ["esophagus", "egj", "siewert", "squamous", "adenocarcinoma", "cross trial", "ajcc 8th"],
+      guidance: "EGJ tumors with epicenter within 2 cm of the cardia extending into esophagus are staged as esophageal. Tis (HGD); T1a (lamina propria/muscularis mucosae); T1b (submucosa); T2 (muscularis propria); T3 (adventitia); T4a (pleura, pericardium, diaphragm, peritoneum); T4b (aorta, vertebral body, trachea).",
+      literature: [{
+        type: "AJCC 8th Landmark Study",
+        icon: "📄",
+        title: "AJCC Cancer Staging Manual 8th Edition: Esophagus and Esophagogastric Junction",
+        citation: "Rice TW, et al. Ann Surg Oncol. 2017;24(4):857-864.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28105574/" },
+          { text: "NCI Adult Esophageal Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/esophageal/hp/esophageal-treatment-pdq" },
+          { text: "NCCN Esophageal and EGJ Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO Clinical Practice Guidelines: Esophageal Cancer ↗", url: "https://www.esmo.org/guidelines/gastrointestinal-cancers/oesophageal-cancer" }
+        ]
+      }],
+      fields: [
+        makeS("histology", "Histological Subtype", "adeno", [
+          ["adeno", "Adenocarcinoma"],
+          ["squamous", "Squamous Cell Carcinoma"]
+        ]),
+        makeS("tCat", "Depth of Wall Invasion (T)", "T1b", [
+          ["Tis", "Tis — High-grade dysplasia / intraepithelial"],
+          ["T1a", "T1a — Invades lamina propria or muscularis mucosae"],
+          ["T1b", "T1b — Invades submucosa"],
+          ["T2", "T2 — Invades muscularis propria"],
+          ["T3", "T3 — Invades adventitia"],
+          ["T4a", "T4a — Invades pleura, pericardium, azygos vein, diaphragm, or peritoneum"],
+          ["T4b", "T4b — Invades aorta, vertebral body, or trachea (unresectable)"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Metastasis in 1 or 2 regional lymph nodes"],
+          ["N2", "N2 — Metastasis in 3 to 6 regional lymph nodes"],
+          ["N3", "N3 — Metastasis in 7 or more regional lymph nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (including non-regional lymph nodes)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Multimodal Protocol"],
+        rows: [
+          { id: "es0_I", cols: ["Stage 0 / I", "Tis, T1a-b N0 M0", "Endoscopic submucosal dissection (ESD for T1a) or upfront transthoracic/transhiatal esophagectomy"] },
+          { id: "esII", cols: ["Stage II", "T2 N0 M0 (Adeno) / T2-T3 N0 (SCC)", "Upfront surgery or neoadjuvant chemoradiation (CROSS regimen)"] },
+          { id: "esIII", cols: ["Stage III", "T3-T4a N0-N2 M0, or T1-T2 N1-N2", "Neoadjuvant chemoradiotherapy (Carboplatin + Paclitaxel + 41.4 Gy) + esophagectomy + adjuvant Nivolumab (CheckMate 577)"] },
+          { id: "esIVA_B", cols: ["Stage IVA / IVB", "T4b Any N, Any T N3 M0, or M1", "Definitive chemoradiation (for T4b) or systemic chemo-immunotherapy (FOLFOX + Nivolumab/Pembrolizumab)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVB (M1)", matchId: "esIVA_B", eq: "Distant metastatic esophageal cancer. HER2 & PD-L1 (CPS) testing indicated." };
+        if (v.tCat === "T4b" || v.nCat === "N3") return { value: "Stage IVA", matchId: "esIVA_B", eq: "Unresectable vascular/tracheal invasion or ≥7 regional nodes." };
+        if (v.tCat === "T4a" || v.nCat === "N2" || v.nCat === "N1" || v.tCat === "T3") return { value: "Stage III / IVA", matchId: "esIII", eq: "Locally advanced; candidate for CROSS trimodality therapy." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "esII", eq: "Muscularis propria invasion." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "es0_I", eq: "Early superficial mucosal/submucosal tumor." };
+      }
+    },
+    {
+      id: "stomachGastricCancer",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Gastric Carcinoma (Stomach - AJCC 8th)",
+      desc: "AJCC 8th staging system for gastric adenocarcinoma based on depth of invasion and 16+ lymph node pathology threshold.",
+      organ: "Stomach (Fundus, Body, Antrum, Pylorus)",
+      region: "Gastrointestinal Oncology",
+      subject: "Gastric Cancer",
+      keywords: ["stomach", "gastric cancer", "adenocarcinoma", "d2 lymphadenectomy", "her2", "flot", "ajcc 8th"],
+      guidance: "T1a (lamina propria/muscularis mucosae); T1b (submucosa); T2 (muscularis propria); T3 (subserosa); T4a (serosa/visceral peritoneum); T4b (adjacent structures). N1 (1-2 nodes); N2 (3-6 nodes); N3a (7-15 nodes); N3b (≥16 nodes). Adequate staging mandates ≥16 evaluated nodes.",
+      literature: [{
+        type: "Consensus Reference",
+        icon: "📄",
+        title: "The 8th Edition of the AJCC Cancer Staging Manual: Stomach",
+        citation: "In H, et al. Ann Surg Oncol. 2017;24(13):3801-3809.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28956247/" },
+          { text: "NCI Gastric Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/stomach/hp/stomach-treatment-pdq" },
+          { text: "NCCN Gastric Cancer Practice Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "Japanese Gastric Cancer Association (JGCA) Guidelines ↗", url: "https://www.jgca.jp/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Depth of Gastric Wall Invasion (T)", "T1a", [
+          ["Tis", "Tis — Carcinoma in situ / intraepithelial"],
+          ["T1a", "T1a — Invades lamina propria or muscularis mucosae"],
+          ["T1b", "T1b — Invades submucosa"],
+          ["T2", "T2 — Invades muscularis propria"],
+          ["T3", "T3 — Invades subserosal connective tissue (without serosal breach)"],
+          ["T4a", "T4a — Infiltrates serosa (visceral peritoneum)"],
+          ["T4b", "T4b — Infiltrates adjacent structures (pancreas, spleen, liver, colon, diaphragm)"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (pN)", "N0", [
+          ["N0", "pN0 — No regional lymph node metastasis"],
+          ["N1", "pN1 — Metastasis in 1 to 2 regional lymph nodes"],
+          ["N2", "pN2 — Metastasis in 3 to 6 regional lymph nodes"],
+          ["N3a", "pN3a — Metastasis in 7 to 15 regional lymph nodes"],
+          ["N3b", "pN3b — Metastasis in 16 or more regional lymph nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (including positive peritoneal cytology CY1)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Grouping", "Clinical Strategy"],
+        rows: [
+          { id: "gasIA", cols: ["Stage IA", "T1 N0 M0", "Endoscopic resection (ESD) for expanded criteria, or subtotal/total gastrectomy"] },
+          { id: "gasIB_II", cols: ["Stage IB / IIA / IIB", "T1-T2 N1, T3 N0, T4a N0", "Perioperative FLOT chemotherapy (4 pre + 4 post cycles) + D2 radical gastrectomy"] },
+          { id: "gasIII", cols: ["Stage IIIA / IIIB / IIIC", "T3-T4 N1-N3b M0", "Perioperative FLOT chemotherapy + radical D2 gastrectomy"] },
+          { id: "gasIV", cols: ["Stage IV", "Any T Any N M1", "Palliative chemotherapy + Nivolumab (for CPS≥5) or Trastuzumab (if HER2+) or Zolbetuximab (Claudin 18.2+)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IV (M1 / CY1)", matchId: "gasIV", eq: "Metastatic gastric cancer (or positive peritoneal cytology). Molecular testing: HER2, MMR/MSI, Claudin 18.2." };
+        if (v.nCat === "N3b" || (v.tCat === "T4b" && v.nCat.startsWith("N"))) return { value: "Stage IIIC", matchId: "gasIII", eq: "High nodal burden (≥16 nodes) or adjacent organ infiltration." };
+        if (v.tCat === "T4a" || v.nCat === "N2" || v.nCat === "N3a") return { value: "Stage III (IIIA / IIIB)", matchId: "gasIII", eq: "Locally advanced gastric cancer. Perioperative FLOT protocol." };
+        if (v.tCat === "T2" || v.tCat === "T3" || v.nCat === "N1") return { value: "Stage IB / II", matchId: "gasIB_II", eq: "Intermediate resectable gastric carcinoma." };
+        return { value: "Stage IA (T1 N0 M0)", matchId: "gasIA", eq: "Early gastric cancer; suitable for endoscopic or surgical curative resection." };
+      }
+    },
+    {
+      id: "smallIntestineCarcinoma",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Small Intestine Adenocarcinoma (Duodenum, Jejunum, Ileum)",
+      desc: "AJCC 8th staging system for adenocarcinomas of the duodenum, jejunum, and ileum.",
+      organ: "Duodenum / Jejunum / Ileum",
+      region: "Gastrointestinal Oncology",
+      subject: "Small Bowel Adenocarcinoma",
+      keywords: ["small intestine", "duodenum", "jejunum", "ileum", "whipple", "ajcc 8th"],
+      guidance: "T1a (lamina propria); T1b (submucosa); T2 (muscularis propria); T3 (subserosa or non-peritonealized perimuscular tissue ≤2cm); T4 (perforates visceral peritoneum or invades other organs). Duodenal tumors involving pancreas are T4.",
+      literature: [{
+        type: "AJCC 8th Staging",
+        icon: "📄",
+        title: "AJCC Cancer Staging Manual 8th Edition: Small Intestine",
+        citation: "Amin MB, et al. AJCC Cancer Staging Manual. 8th ed. 2017.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28097561/" },
+          { text: "NCI Small Intestine Cancer PDQ ↗", url: "https://www.cancer.gov/types/small-intestine" },
+          { text: "NCCN Small Bowel Adenocarcinoma Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO Clinical Guidelines: Small Intestinal Cancers ↗", url: "https://www.esmo.org/guidelines/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Depth of Wall Invasion (T)", "T1", [
+          ["T1", "T1 — Invades lamina propria, muscularis mucosae, or submucosa"],
+          ["T2", "T2 — Invades muscularis propria"],
+          ["T3", "T3 — Invades subserosa or non-peritonealized perimuscular retroperitoneal tissue"],
+          ["T4", "T4 — Perforates visceral peritoneum or directly invades other organs/structures (e.g., pancreas)"]
+        ]),
+        makeS("nCat", "Regional Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Metastasis in 1 or 2 regional lymph nodes"],
+          ["N2", "N2 — Metastasis in 3 or more regional lymph nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "TNM Grouping", "Management"],
+        rows: [
+          { id: "smI", cols: ["Stage I", "T1-T2 N0 M0", "Segmental bowel resection with mesenteric lymphadenectomy (or Whipple for duodenum)"] },
+          { id: "smII", cols: ["Stage IIA / IIB", "T3 N0 (IIA) / T4 N0 M0 (IIB)", "Complete en bloc oncologic resection ± adjuvant FOLFOX"] },
+          { id: "smIII", cols: ["Stage IIIA / IIIB", "Any T N1 (IIIA) / Any T N2 M0 (IIIB)", "Radical resection + 6 months adjuvant FOLFOX / CAPOX"] },
+          { id: "smIV", cols: ["Stage IV", "Any T Any N M1", "Palliative FOLFOX / FOLFIRI + Bevacizumab; checkpoint inhibitor if MSI-H"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IV (M1)", matchId: "smIV", eq: "Distant metastatic small bowel adenocarcinoma. Test for MSI-H/dMMR." };
+        if (v.nCat === "N2") return { value: "Stage IIIB", matchId: "smIII", eq: "High nodal burden (≥3 regional nodes). Adjuvant chemotherapy indicated." };
+        if (v.nCat === "N1") return { value: "Stage IIIA", matchId: "smIII", eq: "Regional nodal metastasis." };
+        if (v.tCat === "T4") return { value: "Stage IIB", matchId: "smII", eq: "Visceral serosal perforation or adjacent organ invasion." };
+        if (v.tCat === "T3") return { value: "Stage IIA", matchId: "smII", eq: "Subserosal / retroperitoneal invasion." };
+        return { value: "Stage I (T1-T2 N0 M0)", matchId: "smI", eq: "Early small bowel tumor confined to wall." };
+      }
+    },
+    {
+      id: "appendixCarcinomaAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Appendix: Carcinoma & Goblet Cell Carcinoid / Adenocarcinoma",
+      desc: "AJCC 8th staging system for non-neuroendocrine epithelial appendiceal neoplasia and Goblet Cell Adenocarcinoma (GCC).",
+      organ: "Appendix",
+      region: "Gastrointestinal Oncology",
+      subject: "Appendiceal Carcinomas",
+      keywords: ["appendix", "goblet cell", "adenocarcinoma", "pseudomyxoma peritonei", "pmp", "hipec", "ajcc 8th"],
+      guidance: "Tis includes Low-Grade Appendiceal Mucinous Neoplasm (LAMN) confined to wall. T1 (submucosa); T2 (muscularis); T3 (subserosa/mesoappendix); T4a (peritoneal serosa, PMP); T4b (adjacent organs). M1a (intraperitoneal acellular mucin); M1b (peritoneal metastases with tumor cells); M1c (non-peritoneal distant organs).",
+      literature: [{
+        type: "AJCC 8th Staging Review",
+        icon: "📄",
+        title: "The 8th Edition of the AJCC Staging System for Appendiceal Carcinomas",
+        citation: "Overman MJ, et al. Ann Surg Oncol. 2018;25(7):1927-1934.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29679261/" },
+          { text: "NCI Adult Appendix Tumors Overview ↗", url: "https://www.cancer.gov/" },
+          { text: "NCCN Colon and Appendix Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "PSOGI Consensus on Peritoneal Surface Malignancies ↗", url: "https://www.psogi.com/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Appendiceal Tumor (T)", "T1", [
+          ["Tis", "Tis — Carcinoma in situ / LAMN confined to appendiceal wall"],
+          ["T1", "T1 — Tumor ≤ 2 cm, invades submucosa"],
+          ["T2", "T2 — Invades muscularis propria"],
+          ["T3", "T3 — Invades subserosa or mesoappendix"],
+          ["T4a", "T4a — Perforates visceral peritoneum (including mucinous implants on appendiceal serosa)"],
+          ["T4b", "T4b — Directly invades other adjacent organs/structures"]
+        ]),
+        makeS("nCat", "Regional Nodes (N)", "N0", [
+          ["N0", "N0 — Regional nodes negative"],
+          ["N1", "N1 — Metastasis in 1 to 3 regional nodes"],
+          ["N2", "N2 — Metastasis in 4 or more regional nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis & Peritoneal Spread (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1a", "M1a — Intraperitoneal acellular mucin only"],
+          ["M1b", "M1b — Intraperitoneal metastasis INCLUDING malignant cells (Pseudomyxoma Peritonei)"],
+          ["M1c", "M1c — Extraperitoneal distant metastases (liver, lung, bone)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "TNM Grouping", "Management"],
+        rows: [
+          { id: "apI", cols: ["Stage I", "T1-T2 N0 M0", "Appendectomy alone or right hemicolectomy (for Goblet Cell Adenocarcinoma / high grade)"] },
+          { id: "apII", cols: ["Stage IIA / IIB / IIC", "T3 (IIA), T4a (IIB), T4b (IIC) N0 M0", "Right hemicolectomy with mesenteric lymphadenectomy"] },
+          { id: "apIII", cols: ["Stage III", "Any T N1-N2 M0", "Right hemicolectomy + adjuvant FOLFOX chemotherapy"] },
+          { id: "apIVA_C", cols: ["Stage IVA / IVB / IVC", "M1a (IVA), M1b (IVB), M1c (IVC)", "Cytoreductive Surgery (CRS) + Hyperthermic Intraperitoneal Chemotherapy (HIPEC)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1c") return { value: "Stage IVC (Extraperitoneal Mets)", matchId: "apIVA_C", eq: "Systemic chemotherapy (FOLFOX/FOLFIRI + Bevacizumab)." };
+        if (v.mCat === "M1b") return { value: "Stage IVB (Pseudomyxoma Peritonei)", matchId: "apIVA_C", eq: "Peritoneal carcinomatosis. Complete cytoreduction (CRS) + HIPEC." };
+        if (v.mCat === "M1a") return { value: "Stage IVA (Acellular Mucin)", matchId: "apIVA_C", eq: "Acellular mucin spill; favorable survival with complete surgical cytoreduction." };
+        if (v.nCat !== "N0") return { value: "Stage III", matchId: "apIII", eq: "Node-positive appendiceal carcinoma. Adjuvant chemotherapy." };
+        if (v.tCat === "T4b") return { value: "Stage IIC", matchId: "apII", eq: "Direct invasion of adjacent organs." };
+        if (v.tCat === "T4a") return { value: "Stage IIB", matchId: "apII", eq: "Peritoneal serosal breach." };
+        if (v.tCat === "T3") return { value: "Stage IIA", matchId: "apII", eq: "Subserosa / mesoappendix invasion." };
+        return { value: "Stage I (T1-T2 N0 M0)", matchId: "apI", eq: "Organ-confined appendiceal neoplasm." };
+      }
+    },
+    {
+      id: "colorectalCancerAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Colon and Rectum (Colorectal Carcinoma - AJCC 8th)",
+      desc: "Standard TNM classification for adenocarcinoma of the colon and rectum integrating tumor deposits (N1c).",
+      organ: "Colon / Rectum",
+      region: "Gastrointestinal Oncology",
+      subject: "Colorectal Carcinoma",
+      keywords: ["colon", "rectum", "colorectal", "tnm", "tumor deposits", "msi-h", "kras", "ajcc 8th"],
+      guidance: "T1 (submucosa); T2 (muscularis propria); T3 (subserosa / perirectal fat); T4a (visceral peritoneum); T4b (adjacent organ). N1a (1 node), N1b (2-3 nodes), N1c (tumor deposits without nodes); N2a (4-6 nodes), N2b (≥7 nodes). M1a (1 site), M1b (≥2 sites), M1c (peritoneal).",
+      literature: [{
+        type: "AJCC 8th Staging Manual",
+        icon: "📄",
+        title: "The Eighth Edition AJCC Cancer Staging Manual: Colorectal Cancer",
+        citation: "Weiser MR. Ann Surg Oncol. 2018;25(6):1454-1455.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29616422/" },
+          { text: "NCI Colon Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/colorectal/hp/colon-treatment-pdq" },
+          { text: "NCCN Colon and Rectal Cancer Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO Clinical Practice Guidelines: Colorectal Cancer ↗", url: "https://www.esmo.org/guidelines/gastrointestinal-cancers/colorectal-cancer" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Depth of Wall Invasion (T)", "T1", [
+          ["Tis", "Tis — Carcinoma in situ / intramucosal carcinoma"],
+          ["T1", "T1 — Invades submucosa"],
+          ["T2", "T2 — Invades muscularis propria"],
+          ["T3", "T3 — Invades through muscularis into subserosa or non-peritonealized pericolic/perirectal tissues"],
+          ["T4a", "T4a — Infiltrates through visceral peritoneum"],
+          ["T4b", "T4b — Directly invades or adheres to other adjacent organs/structures"]
+        ]),
+        makeS("nCat", "Regional Nodes & Tumor Deposits (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1a", "N1a — 1 regional lymph node metastasis"],
+          ["N1b", "N1b — 2 to 3 regional lymph nodes metastasis"],
+          ["N1c", "N1c — Tumor deposits in subserosa/mesentery without regional lymph node metastasis"],
+          ["N2a", "N2a — 4 to 6 regional lymph nodes metastasis"],
+          ["N2b", "N2b — 7 or more regional lymph nodes metastasis"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1a", "M1a — Distant metastasis to a single organ (liver, lung, ovary) without peritoneal metastasis"],
+          ["M1b", "M1b — Distant metastasis to two or more sites/organs without peritoneal metastasis"],
+          ["M1c", "M1c — Distant metastasis to peritoneal surface with or without other organ metastases"]
+        ])
+      ],
+      table: {
+        headers: ["Stage Group", "TNM Grouping", "Clinical Strategy"],
+        rows: [
+          { id: "crcI", cols: ["Stage I", "T1-T2 N0 M0", "Oncologic segmental colectomy with complete mesocolic excision (CME) or Total Mesorectal Excision (TME); no adjuvant chemo"] },
+          { id: "crcII", cols: ["Stage IIA – IIC", "T3 (IIA), T4a (IIB), T4b (IIC) N0 M0", "Surgical resection; adjuvant Capecitabine/FOLFOX considered for high-risk features (T4, perforation, <12 nodes)"] },
+          { id: "crcIII", cols: ["Stage IIIA – IIIC", "Any T N1-N2 M0", "Surgical resection + 3–6 months adjuvant CAPOX/FOLFOX; check MMR/MSI status"] },
+          { id: "crcIV", cols: ["Stage IVA – IVC", "Any T Any N M1a-M1c", "Targeted therapy: FOLFOX/FOLFIRI + anti-EGFR (RAS wild-type) or anti-VEGF; Pembrolizumab for MSI-H"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1c") return { value: "Stage IVC (Peritoneal Mets)", matchId: "crcIV", eq: "Peritoneal carcinomatosis. Evaluate for cytoreductive surgery + HIPEC." };
+        if (v.mCat === "M1b") return { value: "Stage IVB", matchId: "crcIV", eq: "Multiple organ metastases. Systemic doublet/triplet chemotherapy + biologic." };
+        if (v.mCat === "M1a") return { value: "Stage IVA (Oligometastatic)", matchId: "crcIV", eq: "Single organ metastasis (e.g. resectable liver or lung lesion)." };
+        if (v.nCat !== "N0") {
+          var isHighN = (v.nCat === "N2b" || (v.tCat.startsWith("T4") && v.nCat.startsWith("N2")));
+          return { value: isHighN ? "Stage IIIC" : "Stage IIIA / IIIB", matchId: "crcIII", eq: "Node-positive colorectal cancer. Adjuvant CAPOX (3 mo) or FOLFOX (6 mo)." };
+        }
+        if (v.tCat === "T4b") return { value: "Stage IIC", matchId: "crcII", eq: "Direct adjacent organ invasion." };
+        if (v.tCat === "T4a") return { value: "Stage IIB", matchId: "crcII", eq: "Visceral peritoneal perforation. High risk for recurrence." };
+        if (v.tCat === "T3") return { value: "Stage IIA", matchId: "crcII", eq: "Penetrates muscularis into subserosa." };
+        if (v.tCat === "Tis") return { value: "Stage 0 (Tis N0 M0)", matchId: "crcI", eq: "Carcinoma in situ." };
+        return { value: "Stage I (" + v.tCat + " N0 M0)", matchId: "crcI", eq: "Early organ-confined colon/rectal cancer. Surgery alone curative in >90%." };
+      }
+    },
+    {
+      id: "analCanalCarcinoma",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Anal Canal & Perianal Skin (Squamous Cell Carcinoma)",
+      desc: "AJCC 8th staging for HPV-associated anal canal and perianal carcinoma treated with definitive Nigro chemoradiotherapy.",
+      organ: "Anal Canal / Perianal Skin",
+      region: "Colorectal / Surgical Oncology",
+      subject: "Anal Cancer",
+      keywords: ["anal canal", "anal cancer", "nigro protocol", "hpv", "inguinal nodes", "mitomycin", "ajcc 8th"],
+      guidance: "T1 ≤2cm; T2 >2 to ≤5cm; T3 >5cm; T4 invades adjacent organs (vagina, urethra, bladder; NOT sphincter or perianal skin). N1a (inguinal, mesorectal, internal iliac); N1b (external iliac); N1c (bilateral inguinal/iliac).",
+      literature: [{
+        type: "Consensus Guidelines",
+        icon: "📄",
+        title: "The 8th Edition AJCC Staging System for Anal Cancer",
+        citation: "Glynne-Jones R, et al. Colorectal Dis. 2017;19(11):1038-1044.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28833989/" },
+          { text: "NCI Adult Anal Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/anal/hp/anal-treatment-pdq" },
+          { text: "NCCN Anal Carcinoma Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO-ESSO-ESTRO Anal Cancer Guidelines ↗", url: "https://www.esmo.org/guidelines/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Anal Tumor (T)", "T1", [
+          ["Tis", "Tis — High-grade squamous intraepithelial lesion (AIN II-III / Bowen's)"],
+          ["T1", "T1 — Tumor ≤ 2 cm in greatest dimension"],
+          ["T2", "T2 — Tumor > 2 cm but ≤ 5 cm in greatest dimension"],
+          ["T3", "T3 — Tumor > 5 cm in greatest dimension"],
+          ["T4", "T4 — Invades adjacent organs: vagina, urethra, bladder (rectal wall or sphincter does NOT count)"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — Regional nodes negative"],
+          ["N1a", "N1a — Inguinal, mesorectal, or internal iliac lymph nodes"],
+          ["N1b", "N1b — External iliac lymph nodes"],
+          ["N1c", "N1c — Bilateral inguinal and/or external/internal iliac nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (liver, lung)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Treatment Strategy"],
+        rows: [
+          { id: "anI", cols: ["Stage I", "T1 N0 M0", "Definitive Chemoradiotherapy (Nigro Protocol: 5-FU + Mitomycin C + IMRT)"] },
+          { id: "anII", cols: ["Stage IIA / IIB", "T2 N0 (IIA) / T3 N0 M0 (IIB)", "Nigro Chemoradiotherapy (sphincter-sparing definitive intent)"] },
+          { id: "anIII", cols: ["Stage IIIA – IIIC", "T4 N0 (IIIA) / T1-T2 N1 (IIIB) / T3-T4 N1 (IIIC)", "Definitive Chemoradiotherapy with simultaneous integrated boost to involved nodes; APR reserved for salvage"] },
+          { id: "anIV", cols: ["Stage IV", "Any T Any N M1", "Systemic chemotherapy (Carboplatin + Paclitaxel) ± anti-PD-1 (Retifanlimab / Pembrolizumab)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IV (M1)", matchId: "anIV", eq: "Metastatic anal cancer. First-line Carboplatin + Paclitaxel." };
+        if (v.nCat.startsWith("N1")) {
+          return { value: (v.tCat === "T3" || v.tCat === "T4") ? "Stage IIIC" : "Stage IIIB", matchId: "anIII", eq: "Regional nodal disease. Nigro protocol chemoradiation." };
+        }
+        if (v.tCat === "T4") return { value: "Stage IIIA (T4 N0 M0)", matchId: "anIII", eq: "Direct invasion into adjacent pelvic organs (vagina, bladder, urethra)." };
+        if (v.tCat === "T3") return { value: "Stage IIB (T3 N0 M0)", matchId: "anII", eq: "Primary tumor > 5 cm." };
+        if (v.tCat === "T2") return { value: "Stage IIA (T2 N0 M0)", matchId: "anII", eq: "Tumor 2–5 cm." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "anI", eq: "Early anal canal carcinoma; highly curable with Nigro regimen." };
+      }
+    },
+    {
+      id: "gistTumorRiskStaging",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Gastrointestinal Stromal Tumor (GIST - Miettinen / AJCC 8th)",
+      desc: "Risk stratifier and TNM staging based on anatomical primary site (gastric vs non-gastric), size, and mitotic rate per 5 mm².",
+      organ: "Stomach / Small Bowel / Rectum",
+      region: "Gastrointestinal Oncology",
+      subject: "Gastrointestinal Stromal Tumors",
+      keywords: ["gist", "c-kit", "imatinib", "mitotic count", "cd117", "dog1", "miettinen", "ajcc 8th"],
+      guidance: "Mitotic rate cutoff: ≤ 5 per 5 mm² (low) vs > 5 per 5 mm² (high). Non-gastric GISTs (small intestine, rectum) carry much higher risk than gastric GISTs of the same size.",
+      literature: [{
+        type: "Landmark Risk Classification",
+        icon: "📄",
+        title: "Gastrointestinal Stromal Tumors: Pathology and Prognosis at Different Sites",
+        citation: "Miettinen M, Lasota J. Semin Diagn Pathol. 2006;23(2):70-83.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/17195498/" },
+          { text: "NCI Adult GIST Treatment PDQ ↗", url: "https://www.cancer.gov/types/soft-tissue-sarcoma/hp/gist-treatment-pdq" },
+          { text: "NCCN GIST Practice Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "ESMO-EURACAN-GENTURIS Clinical Practice Guidelines for GIST ↗", url: "https://www.esmo.org/guidelines/" }
+        ]
+      }],
+      fields: [
+        makeS("site", "Anatomical Primary Site", "gastric", [
+          ["gastric", "Stomach (Gastric GIST — Favorable site)"],
+          ["non_gastric", "Small Intestine, Colon, Rectum, or Mesentery (Unfavorable sites)"]
+        ]),
+        makeS("size", "Tumor Greatest Dimension", "sz1", [
+          ["sz1", "≤ 2.0 cm"],
+          ["sz2", "> 2.0 cm to ≤ 5.0 cm"],
+          ["sz3", "> 5.0 cm to ≤ 10.0 cm"],
+          ["sz4", "> 10.0 cm"]
+        ]),
+        makeS("mitosis", "Mitotic Index per 5 mm² (approx 50 HPF)", "low", [
+          ["low", "≤ 5 mitoses per 5 mm² (Low Mitotic Rate)"],
+          ["high", "> 5 mitoses per 5 mm² (High Mitotic Rate)"]
+        ]),
+        makeS("mets", "Distant Metastasis / Peritoneal Seeding", "M0", [
+          ["M0", "M0 — No distant or peritoneal metastases"],
+          ["M1", "M1 — Liver metastases or peritoneal seeding present (Stage IV)"]
+        ])
+      ],
+      table: {
+        headers: ["Risk Category", "Anatomic Profile", "Adjuvant Imatinib Protocol"],
+        rows: [
+          { id: "gVeryLow", cols: ["Very Low / None", "Gastric ≤2cm or non-gastric ≤2cm with low mitoses", "Complete surgical resection; observation alone"] },
+          { id: "gLow", cols: ["Low Risk", "Gastric 2-5cm low mitoses, non-gastric 2-5cm low mitoses", "Surgical resection with clear margins; surveillance"] },
+          { id: "gInt", cols: ["Intermediate Risk", "Gastric 5-10cm low mitoses, or gastric ≤5cm high mitoses", "Surgical resection; consider adjuvant Imatinib"] },
+          { id: "gHigh", cols: ["High Risk", ">5cm with high mitoses, >10cm, or non-gastric >5cm", "Adjuvant Imatinib (400 mg daily) for 3 full years (SSGXVIII/AIO trial)"] },
+          { id: "gMets", cols: ["Stage IV / Metastatic", "Peritoneal or hepatic metastasis", "Continuous Imatinib; mutational testing (KIT exon 9, 11; PDGFRA D842V)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mets === "M1") return { value: "Stage IV (Metastatic GIST)", matchId: "gMets", eq: "Metastatic GIST. Mutational testing mandatory (Imatinib first line, Avapritinib for PDGFRA D842V)." };
+        var isGastric = v.site === "gastric";
+        var isHighMit = v.mitosis === "high";
+        var sz = v.size;
+        var risk = "Low Risk";
+        var match = "gLow";
+        if (isHighMit) {
+          if (sz !== "sz1") { risk = "High Risk"; match = "gHigh"; }
+          else { risk = isGastric ? "Low/Moderate" : "High Risk"; match = isGastric ? "gInt" : "gHigh"; }
+        } else {
+          if (sz === "sz4") { risk = isGastric ? "Moderate Risk" : "High Risk"; match = isGastric ? "gInt" : "gHigh"; }
+          else if (sz === "sz3") { risk = isGastric ? "Low Risk" : "Moderate Risk"; match = isGastric ? "gLow" : "gInt"; }
+          else if (sz === "sz1") { risk = "Very Low Risk"; match = "gVeryLow"; }
+        }
+        return {
+          value: risk + " GIST (" + (isGastric ? "Gastric" : "Non-Gastric") + ")",
+          matchId: match,
+          eq: (risk === "High Risk") ? "High recurrence risk: 3 years of adjuvant Imatinib 400 mg daily indicated." : "Surgical resection with negative pseudocapsule margins."
+        };
+      }
+    },
+    {
+      id: "giNeuroendocrineTumors",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Well-Differentiated NETs (Stomach, Duodenum, Ileum, Appendix, Colorectum, Pancreas)",
+      desc: "WHO / ENETS / AJCC 8th staging and grading (Ki-67 / Mitotic Count) for well-differentiated neuroendocrine tumors.",
+      organ: "Gastroenteropancreatic Neuroendocrine System",
+      region: "Neuroendocrine Oncology",
+      subject: "GEP-NET Staging",
+      keywords: ["net", "neuroendocrine", "carcinoid", "ki-67", "pancreas net", "enets", "prrt", "ajcc 8th"],
+      guidance: "WHO Grade: G1 (Ki-67 <3%, mitoses <2); G2 (Ki-67 3-20%, mitoses 2-20); G3 (Ki-67 >20%, mitoses >20, but well-differentiated morphology). Pancreatic NET T1 ≤2cm; T2 2-4cm; T3 >4cm or duodenum/bile duct; T4 celiac axis or SMA.",
+      literature: [{
+        type: "ENETS & AJCC Guidelines",
+        icon: "📄",
+        title: "The 8th Edition AJCC Staging System for Gastroenteropancreatic Neuroendocrine Tumors",
+        citation: "Amin MB, et al. AJCC Cancer Staging Manual. 8th ed. 2017.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/28097561/" },
+          { text: "NCI Pancreatic and Gastrointestinal NETs PDQ ↗", url: "https://www.cancer.gov/types/gi-neuroendocrine-tumors" },
+          { text: "ENETS Consensus Guidelines ↗", url: "https://www.enets.org/guidelines/" },
+          { text: "NANETS Neuroendocrine Tumor Guidelines ↗", url: "https://nanets.net/" }
+        ]
+      }],
+      fields: [
+        makeS("subsite", "GEP-NET Subsite", "pnet", [
+          ["stomach", "Stomach (Type 1, 2, or 3)"],
+          ["small_bowel", "Duodenum, Ampulla, Jejunum, or Ileum"],
+          ["appendix", "Appendix (≤2 cm vs >2 cm)"],
+          ["colorectum", "Colon or Rectum"],
+          ["pnet", "Pancreas (PanNET)"]
+        ]),
+        makeS("grade", "WHO 2019 / 2022 Histologic Grade", "g1", [
+          ["g1", "Grade 1 (Ki-67 < 3% AND < 2 mitoses/2 mm²)"],
+          ["g2", "Grade 2 (Ki-67 3% – 20% OR 2–20 mitoses/2 mm²)"],
+          ["g3", "Grade 3 (Ki-67 > 20%, Well-differentiated morphology)"]
+        ]),
+        makeS("tCat", "Primary Tumor Extent (T)", "T1", [
+          ["T1", "T1 — Organ-confined small tumor (e.g., PanNET ≤ 2 cm; bowel invades lamina propria/submucosa ≤ 1 cm)"],
+          ["T2", "T2 — PanNET > 2 cm to ≤ 4 cm; or bowel invades muscularis propria"],
+          ["T3", "T3 — PanNET > 4 cm or invades duodenum/bile duct; or bowel invades subserosa"],
+          ["T4", "T4 — Invades adjacent organs or major vascular encasement (celiac axis, SMA)"]
+        ]),
+        makeS("nCat", "Regional Nodes (N)", "N0", [
+          ["N0", "N0 — Negative regional lymph nodes"],
+          ["N1", "N1 — Positive regional lymph nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1a", "M1a — Hepatic metastases only"],
+          ["M1b", "M1b — Extrahepatic metastasis (lung, bone, peritoneum)"],
+          ["M1c", "M1c — Both hepatic and extrahepatic metastases"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Intervention"],
+        rows: [
+          { id: "netI", cols: ["Stage I", "T1 N0 M0", "Endoscopic resection (for small gastric/rectal NET) or conservative enucleation / partial resection"] },
+          { id: "netII", cols: ["Stage II", "T2-T3 N0 M0", "Radical oncologic resection with lymph node clearance"] },
+          { id: "netIII", cols: ["Stage III", "T4 N0 or Any T N1 M0", "En bloc resection if resectable; somatostatin analog (Octreotide/Lanreotide) if residual"] },
+          { id: "netIV", cols: ["Stage IV", "Any T Any N M1", "Somatostatin analogs (SSA), 177Lu-DOTATATE (PRRT), Everolimus, Sunitinib, or liver debulking"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat.startsWith("M1")) return { value: "Stage IV (" + v.mCat + ")", matchId: "netIV", eq: "Metastatic GEP-NET. Somatostatin receptor imaging (68Ga-DOTATATE PET) and SSA / PRRT." };
+        if (v.nCat === "N1" || v.tCat === "T4") return { value: "Stage III", matchId: "netIII", eq: "Regional nodal involvement or vascular/adjacent organ invasion." };
+        if (v.tCat === "T2" || v.tCat === "T3") return { value: "Stage II", matchId: "netII", eq: "Intermediate size or deep muscular/serosal invasion." };
+        return { value: "Stage I (T1 N0 M0 - " + v.grade.toUpperCase() + ")", matchId: "netI", eq: "Localized small neuroendocrine tumor; favorable prognosis." };
+      }
+    },
+    {
+      id: "liverHccIccAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Liver: Hepatocellular Carcinoma & Intrahepatic Cholangiocarcinoma",
+      desc: "AJCC 8th Edition staging for primary liver malignancies (HCC and iCCA).",
+      organ: "Liver / Hepatic Parenchyma",
+      region: "Hepatobiliary Oncology",
+      subject: "Primary Liver Cancers",
+      keywords: ["hcc", "cholangiocarcinoma", "icca", "bclc", "microvascular invasion", "ajcc 8th"],
+      guidance: "HCC: T1a (solitary ≤2cm); T1b (solitary >2cm without vascular invasion); T2 (solitary >2cm with vascular invasion OR multiple ≤5cm); T3 (multiple >5cm); T4 (portal vein or hepatic vein invasion).",
+      literature: [{
+        type: "Hepatology Staging Standard",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging for Hepatocellular Carcinoma",
+        citation: "Kamarajah SK, et al. J Surg Oncol. 2019;120(4):657-666.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/31348530/" },
+          { text: "NCI Adult Primary Liver Cancer PDQ ↗", url: "https://www.cancer.gov/types/liver/hp/adult-liver-treatment-pdq" },
+          { text: "AASLD Guidelines for the Treatment of Hepatocellular Carcinoma ↗", url: "https://www.aasld.org/practice-guidelines" },
+          { text: "EASL Clinical Practice Guidelines: Management of HCC ↗", url: "https://easl.eu/publications/clinical-practice-guidelines/" }
+        ]
+      }],
+      fields: [
+        makeS("tumorType", "Primary Liver Malignancy", "hcc", [
+          ["hcc", "Hepatocellular Carcinoma (HCC)"],
+          ["icca", "Intrahepatic Cholangiocarcinoma (iCCA)"]
+        ]),
+        makeS("tCat", "Tumor Number, Size & Vascular Invasion (T)", "T1a", [
+          ["T1a", "T1a — Solitary tumor ≤ 2 cm, with or without vascular invasion"],
+          ["T1b", "T1b — Solitary tumor > 2 cm WITHOUT vascular invasion"],
+          ["T2", "T2 — Solitary tumor > 2 cm WITH vascular invasion; OR multiple tumors, none > 5 cm"],
+          ["T3", "T3 — Multiple tumors, at least one > 5 cm"],
+          ["T4", "T4 — Tumor(s) involving major branch of portal or hepatic vein, or perforating visceral peritoneum"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — Regional nodes negative"],
+          ["N1", "N1 — Regional lymph node metastasis present (hilar, celiac, caval)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (lung, bone)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Clinical Recommendation"],
+        rows: [
+          { id: "livIA", cols: ["Stage IA", "T1a N0 M0", "Surgical resection or radiofrequency/microwave ablation (RFA/MWA)"] },
+          { id: "livIB", cols: ["Stage IB", "T1b N0 M0", "Partial hepatectomy or orthotopic liver transplantation (within Milan criteria)"] },
+          { id: "livII", cols: ["Stage II", "T2 N0 M0", "Liver resection, transplantation (Milan criteria), or TACE/TARE"] },
+          { id: "livIII", cols: ["Stage IIIA / IIIB", "T3 (IIIA) / T4 (IIIB) N0 M0", "Locoregional therapy (TACE, Y90) or Atezolizumab + Bevacizumab / Tremelimumab + Durvalumab"] },
+          { id: "livIV", cols: ["Stage IVA / IVB", "Any T N1 M0 (IVA) / M1 (IVB)", "First-line dual immunotherapy: Atezolizumab + Bevacizumab or STRIDE regimen"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IVB (M1)", matchId: "livIV", eq: "Distant metastatic liver cancer. Systemic immunotherapy first-line." };
+        if (v.nCat === "N1") return { value: "Stage IVA (N1)", matchId: "livIV", eq: "Regional lymph node metastasis." };
+        if (v.tCat === "T4") return { value: "Stage IIIB (T4 N0 M0)", matchId: "livIII", eq: "Gross vascular macro-invasion (portal vein / hepatic vein branch)." };
+        if (v.tCat === "T3") return { value: "Stage IIIA (T3 N0 M0)", matchId: "livIII", eq: "Multiple liver tumors with at least one > 5 cm." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "livII", eq: "Multifocal tumors ≤ 5 cm or solitary with vascular invasion." };
+        if (v.tCat === "T1b") return { value: "Stage IB", matchId: "livIB", eq: "Solitary tumor > 2 cm without vascular invasion." };
+        return { value: "Stage IA (T1a N0 M0)", matchId: "livIA", eq: "Solitary small liver mass ≤ 2 cm. Highly amenable to ablation or resection." };
+      }
+    },
+    {
+      id: "gallbladderCancerAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Gallbladder Carcinoma (AJCC 8th)",
+      desc: "Staging based on depth of gallbladder wall infiltration and peritoneal vs hepatic sidedness.",
+      organ: "Gallbladder / Cystic Duct",
+      region: "Hepatobiliary Oncology",
+      subject: "Gallbladder Cancer",
+      keywords: ["gallbladder", "cholecystectomy", "peritoneal", "hepatic sidedness", "ajcc 8th"],
+      guidance: "T1a (lamina propria); T1b (muscularis); T2a (peritoneal side subserosa); T2b (hepatic side subserosa without liver invasion); T3 (perforates serosa or directly invades liver ≤2cm); T4 (main portal vein/hepatic artery or ≥2 extrahepatic organs).",
+      literature: [{
+        type: "AJCC 8th Staging Manual",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging System for Gallbladder Cancer",
+        citation: "Craig T, et al. HPB (Oxford). 2018;20(11):1018-1025.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29960783/" },
+          { text: "NCI Gallbladder Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/gallbladder" },
+          { text: "NCCN Hepatobiliary Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "E-AHPBA Gallbladder Guidelines ↗", url: "https://www.eahpba.org/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Depth of Wall Invasion & Sidedness (T)", "T1a", [
+          ["Tis", "Tis — Carcinoma in situ"],
+          ["T1a", "T1a — Invades lamina propria"],
+          ["T1b", "T1b — Invades muscularis propria"],
+          ["T2a", "T2a — Invades perimuscular connective tissue on PERITONEAL side (no serosal breach)"],
+          ["T2b", "T2b — Invades perimuscular connective tissue on HEPATIC side (no liver invasion)"],
+          ["T3", "T3 — Perforates serosa (visceral peritoneum) AND/OR directly invades liver or 1 adjacent organ"],
+          ["T4", "T4 — Invades main portal vein or hepatic artery, or invades 2 or more extrahepatic organs"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Metastasis in 1 to 3 regional lymph nodes (cystic, choledochal, hilar)"],
+          ["N2", "N2 — Metastasis in 4 or more regional lymph nodes (peripancreatic, celiac, SMA)"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (peritoneal carcinomatosis)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "TNM Grouping", "Surgical Action"],
+        rows: [
+          { id: "gbI", cols: ["Stage I", "T1 N0 M0", "Simple cholecystectomy alone is curative for T1a; completion resection advised for T1b"] },
+          { id: "gbII", cols: ["Stage IIA / IIB", "T2a (IIA) / T2b (IIB) N0 M0", "Extended cholecystectomy (wedge resection of liver bed IVB/V + portal lymphadenectomy)"] },
+          { id: "gbIII", cols: ["Stage IIIA / IIIB", "T3 N0 (IIIA) / T1-T3 N1 M0 (IIIB)", "Radical en bloc cholecystectomy + formal bisegmentectomy IVB/V + lymphadenectomy + adjuvant Capecitabine"] },
+          { id: "gbIV", cols: ["Stage IVA / IVB", "T4 N0-N1 (IVA) / Any T N2 or M1 (IVB)", "Gemcitabine + Cisplatin + Durvalumab (TOPAZ-1 regimen)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1" || v.nCat === "N2") return { value: "Stage IVB", matchId: "gbIV", eq: "Metastatic gallbladder cancer or ≥4 regional lymph nodes. TOPAZ-1 chemo-immunotherapy." };
+        if (v.tCat === "T4") return { value: "Stage IVA", matchId: "gbIV", eq: "Major portal/hepatic artery encasement or multiple adjacent organ invasion." };
+        if (v.nCat === "N1") return { value: "Stage IIIB", matchId: "gbIII", eq: "1 to 3 regional lymph nodes involved." };
+        if (v.tCat === "T3") return { value: "Stage IIIA", matchId: "gbIII", eq: "Direct liver invasion (≤2cm) or serosal breach." };
+        if (v.tCat === "T2b") return { value: "Stage IIB (Hepatic Side)", matchId: "gbII", eq: "Hepatic-sided T2; high risk of occult micro-metastases to liver bed." };
+        if (v.tCat === "T2a") return { value: "Stage IIA (Peritoneal Side)", matchId: "gbII", eq: "Peritoneal-sided T2; extended radical resection recommended." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "gbI", eq: "Early organ-confined tumor." };
+      }
+    },
+    {
+      id: "bileDuctsPerihilarDistal",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Bile Ducts (Intrahepatic, Perihilar Klatskin & Distal Extrahepatic)",
+      desc: "AJCC 8th Edition staging algorithms distinguishing Perihilar (Klatskin) from Distal Extrahepatic Cholangiocarcinoma.",
+      organ: "Perihilar & Distal Bile Ducts",
+      region: "Hepatobiliary Surgery",
+      subject: "Biliary Tract Carcinomas",
+      keywords: ["cholangiocarcinoma", "klatskin", "perihilar", "distal bile duct", "bismuth-corlette", "ajcc 8th"],
+      guidance: "Perihilar: T1 confined to duct; T2a beyond wall into fat; T2b into adjacent liver parenchyma; T3 unilateral portal vein/hepatic artery; T4 bilateral portal/hepatic vessels or secondary biliary branches bilaterally. Distal: T1 depth <5mm; T2 depth 5-12mm; T3 depth >12mm; T4 celiac axis, SMA, or hepatic artery.",
+      literature: [{
+        type: "Biliary Staging Standard",
+        icon: "📄",
+        title: "The 8th Edition AJCC Staging System for Perihilar and Distal Cholangiocarcinoma",
+        citation: "Ruzzenente A, et al. HPB (Oxford). 2018;20(8):729-736.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29729864/" },
+          { text: "NCI Bile Duct Cancer (Cholangiocarcinoma) PDQ ↗", url: "https://www.cancer.gov/types/liver/hp/bile-duct-treatment-pdq" },
+          { text: "NCCN Hepatobiliary Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "International Cholangiocarcinoma Research Network (ICRN) ↗", url: "https://cholangiocarcinoma.org/" }
+        ]
+      }],
+      fields: [
+        makeS("site", "Bile Duct Primary Site", "perihilar", [
+          ["perihilar", "Perihilar Cholangiocarcinoma (Klatskin Tumor)"],
+          ["distal", "Distal Extrahepatic Cholangiocarcinoma (Below cystic duct junction)"]
+        ]),
+        makeS("tCat", "Primary Biliary Tumor Extent (T)", "T1", [
+          ["T1", "T1 — Perihilar: confined to duct | Distal: depth of invasion < 5 mm"],
+          ["T2", "T2 — Perihilar: invades adipose or liver | Distal: depth of invasion 5 mm to 12 mm"],
+          ["T3", "T3 — Perihilar: unilateral vascular branch | Distal: depth of invasion > 12 mm"],
+          ["T4", "T4 — Perihilar: main portal vein / bilateral branches | Distal: invades celiac axis, SMA, or common hepatic artery"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — Regional nodes negative"],
+          ["N1", "N1 — 1 to 3 regional lymph nodes positive"],
+          ["N2", "N2 — 4 or more regional lymph nodes positive"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Definition", "Surgical / Medical Protocol"],
+        rows: [
+          { id: "bdI", cols: ["Stage I", "T1 N0 M0", "En bloc bile duct resection (Whipple for distal; major hepatectomy for perihilar)"] },
+          { id: "bdII", cols: ["Stage II", "T2 N0 M0", "Radical surgical resection with negative margins (R0) + lymphadenectomy"] },
+          { id: "bdIII", cols: ["Stage IIIA / IIIB / IIIC", "T3-T4 N0 (IIIA/B) or Any T N1 (IIIC)", "Major hepatectomy with caudate lobectomy (perihilar) or pancreaticoduodenectomy + adjuvant Capecitabine (BILCAP)"] },
+          { id: "bdIV", cols: ["Stage IV", "Any T N2 or M1", "Palliative chemotherapy: Gemcitabine + Cisplatin + Durvalumab ± FGFR2/IDH1 inhibitors"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1" || v.nCat === "N2") return { value: "Stage IV", matchId: "bdIV", eq: "Metastatic biliary tract cancer or extensive nodal disease (≥4 nodes). Check for FGFR2 fusions / IDH1 mutations." };
+        if (v.nCat === "N1" || v.tCat === "T4" || v.tCat === "T3") return { value: "Stage III", matchId: "bdIII", eq: "Vascular invasion or regional nodal spread. Adjuvant Capecitabine (BILCAP regimen)." };
+        if (v.tCat === "T2") return { value: "Stage II", matchId: "bdII", eq: "Invasion into liver/fat (perihilar) or 5-12mm depth (distal)." };
+        return { value: "Stage I (T1 N0 M0)", matchId: "bdI", eq: "Early superficial ductal carcinoma." };
+      }
+    },
+    {
+      id: "ampullaOfVaterCarcinoma",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Ampulla of Vater Carcinoma (AJCC 8th)",
+      desc: "AJCC 8th staging based on depth of invasion into sphincter of Oddi, duodenal wall, and pancreas.",
+      organ: "Ampulla of Vater",
+      region: "Hepatobiliary / Pancreatic Surgery",
+      subject: "Ampullary Carcinoma",
+      keywords: ["ampulla", "ampullary", "whipple", "duodenum", "pancreaticoduodenectomy", "ajcc 8th"],
+      guidance: "T1a (limited to ampulla/sphincter of Oddi); T1b (extends beyond sphincter into duodenal submucosa); T2 (invades duodenal muscularis propria); T3a (invades pancreas ≤0.5cm); T3b (invades pancreas >0.5cm or peripancreatic tissue); T4 (celiac axis, SMA).",
+      literature: [{
+        type: "Consensus Reference",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging for Ampullary Carcinoma",
+        citation: "Balachandran VP, et al. HPB (Oxford). 2018;20(9):834-842.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/29729865/" },
+          { text: "NCI Ampullary Cancer Overview ↗", url: "https://www.cancer.gov/" },
+          { text: "NCCN Ampullary Cancer Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "IHPBA International HPB Guidelines ↗", url: "https://www.ihpba.org/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Depth of Ampullary Tumor Invasion (T)", "T1a", [
+          ["T1a", "T1a — Confined to ampulla of Vater or sphincter of Oddi"],
+          ["T1b", "T1b — Extends beyond sphincter of Oddi into duodenal submucosa"],
+          ["T2", "T2 — Invades muscularis propria of the duodenum"],
+          ["T3a", "T3a — Invades pancreas to a depth of ≤ 0.5 cm"],
+          ["T3b", "T3b — Invades pancreas > 0.5 cm OR extends into peripancreatic tissue"],
+          ["T4", "T4 — Involves celiac axis, superior mesenteric artery, or common hepatic artery"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — Regional nodes negative"],
+          ["N1", "N1 — 1 to 3 regional lymph nodes positive"],
+          ["N2", "N2 — 4 or more regional lymph nodes positive"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present"]
+        ])
+      ],
+      table: {
+        headers: ["Stage", "Criteria", "Intervention"],
+        rows: [
+          { id: "amIA", cols: ["Stage IA", "T1a N0 M0", "Pancreaticoduodenectomy (Whipple) or endoscopic papillectomy in select benign/adenoma"] },
+          { id: "amIB", cols: ["Stage IB", "T1b-T2 N0 M0", "Standard pancreaticoduodenectomy (Whipple procedure)"] },
+          { id: "amII", cols: ["Stage IIA / IIB", "T3a (IIA) / T3b (IIB) N0 M0", "Pancreaticoduodenectomy with negative margins + adjuvant chemotherapy"] },
+          { id: "amIII", cols: ["Stage IIIA / IIIB", "Any T N1 (IIIA) / Any T N2 or T4 Any N (IIIB)", "Whipple + regional lymphadenectomy + adjuvant chemotherapy (Gemcitabine/Capecitabine)"] },
+          { id: "amIV", cols: ["Stage IV", "Any T Any N M1", "Palliative chemotherapy (mFOLFIRINOX or Gemcitabine-Cisplatin)"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IV (M1)", matchId: "amIV", eq: "Metastatic ampullary adenocarcinoma." };
+        if (v.tCat === "T4" || v.nCat === "N2") return { value: "Stage IIIB", matchId: "amIII", eq: "Arterial encasement or ≥4 regional lymph nodes." };
+        if (v.nCat === "N1") return { value: "Stage IIIA", matchId: "amIII", eq: "1 to 3 regional lymph nodes positive." };
+        if (v.tCat === "T3b") return { value: "Stage IIB", matchId: "amII", eq: "Deep pancreatic invasion (>0.5 cm)." };
+        if (v.tCat === "T3a") return { value: "Stage IIA", matchId: "amII", eq: "Superficial pancreatic invasion (≤0.5 cm)." };
+        if (v.tCat === "T1b" || v.tCat === "T2") return { value: "Stage IB", matchId: "amIB", eq: "Duodenal submucosa or muscularis invasion." };
+        return { value: "Stage IA (T1a N0 M0)", matchId: "amIA", eq: "Confined to ampulla/sphincter; 5-year overall survival >65-70%." };
+      }
+    },
+    {
+      id: "pancreasAdenocarcinomaAJCC",
+      cat: "onco_hn_gi",
+      type: "class",
+      name: "Exocrine Pancreas (Pancreatic Ductal Adenocarcinoma - PDAC)",
+      desc: "AJCC 8th Edition size-based T-classification and clinical resectability criteria.",
+      organ: "Pancreas (Head, Body, Tail)",
+      region: "Gastrointestinal Oncology",
+      subject: "Pancreatic Carcinoma",
+      keywords: ["pancreas", "pdac", "whipple", "folfirinox", "sma", "celiac axis", "ajcc 8th"],
+      guidance: "T1 ≤2 cm (T1a ≤0.5cm, T1b 0.5-1cm, T1c 1-2cm); T2 >2 to ≤4 cm; T3 >4 cm; T4 celiac axis, SMA, or common hepatic artery (unresectable). N1 (1-3 nodes), N2 (≥4 nodes).",
+      literature: [{
+        type: "AJCC 8th Staging Landmark",
+        icon: "📄",
+        title: "Validation of the AJCC 8th Edition Staging for Pancreatic Ductal Adenocarcinoma",
+        citation: "Allen PJ, et al. Ann Surg. 2017;265(1):185-191.",
+        links: [
+          { text: "PubMed Record ↗", url: "https://pubmed.ncbi.nlm.nih.gov/27564755/" },
+          { text: "NCI Adult Pancreatic Cancer Treatment PDQ ↗", url: "https://www.cancer.gov/types/pancreatic/hp/pancreatic-treatment-pdq" },
+          { text: "NCCN Pancreatic Adenocarcinoma Practice Guidelines ↗", url: "https://www.nccn.org/guidelines/category_1" },
+          { text: "American Pancreatic Association (APA) Guidelines ↗", url: "https://www.american-pancreatic-association.org/" }
+        ]
+      }],
+      fields: [
+        makeS("tCat", "Primary Pancreatic Tumor Size & Extension (T)", "T1c", [
+          ["T1a", "T1a — Tumor ≤ 0.5 cm in greatest dimension"],
+          ["T1b", "T1b — Tumor > 0.5 cm but ≤ 1 cm in greatest dimension"],
+          ["T1c", "T1c — Tumor > 1 cm but ≤ 2 cm in greatest dimension"],
+          ["T2", "T2 — Tumor > 2 cm but ≤ 4 cm in greatest dimension"],
+          ["T3", "T3 — Tumor > 4 cm in greatest dimension (confined to pancreas/peripancreatic fat)"],
+          ["T4", "T4 — Involves celiac axis, superior mesenteric artery (SMA), or common hepatic artery (locally advanced / unresectable)"]
+        ]),
+        makeS("nCat", "Regional Lymph Nodes (N)", "N0", [
+          ["N0", "N0 — No regional lymph node metastasis"],
+          ["N1", "N1 — Metastasis in 1 to 3 regional lymph nodes"],
+          ["N2", "N2 — Metastasis in 4 or more regional lymph nodes"]
+        ]),
+        makeS("mCat", "Distant Metastasis (M)", "M0", [
+          ["M0", "M0 — No distant metastasis"],
+          ["M1", "M1 — Distant metastasis present (liver, peritoneum, lungs)"]
+        ])
+      ],
+      table: {
+        headers: ["Stage Group", "TNM Grouping", "Clinical Pathway"],
+        rows: [
+          { id: "panIA", cols: ["Stage IA", "T1 N0 M0 (≤ 2 cm)", "Upfront surgical resection (Whipple or distal pancreatectomy) + 6 months adjuvant mFOLFIRINOX"] },
+          { id: "panIB", cols: ["Stage IB", "T2 N0 M0 (2–4 cm)", "Upfront surgical resection or neoadjuvant mFOLFIRINOX + adjuvant chemotherapy"] },
+          { id: "panII", cols: ["Stage IIA / IIB", "T3 N0 (IIA) / T1-T3 N1 M0 (IIB)", "Neoadjuvant FOLFIRINOX or upfront resection + extended lymphadenectomy + adjuvant mFOLFIRINOX"] },
+          { id: "panIII", cols: ["Stage III", "T4 Any N M0, or Any T N2 M0", "Locally advanced: Induction mFOLFIRINOX / Gemcitabine + nab-Paclitaxel ± SBRT"] },
+          { id: "panIV", cols: ["Stage IV", "Any T Any N M1", "Palliative chemotherapy: mFOLFIRINOX or Gemcitabine + nab-Paclitaxel; germline BRCA testing for Olaparib"] }
+        ]
+      },
+      calc: function (v) {
+        if (v.mCat === "M1") return { value: "Stage IV (M1)", matchId: "panIV", eq: "Metastatic pancreatic ductal adenocarcinoma. Test for germline BRCA1/2." };
+        if (v.tCat === "T4" || v.nCat === "N2") return { value: "Stage III (Locally Advanced / High Nodal)", matchId: "panIII", eq: "Arterial abutment/encasement or ≥4 regional nodes. Neoadjuvant systemic therapy." };
+        if (v.nCat === "N1") return { value: "Stage IIB (N1 M0)", matchId: "panII", eq: "1 to 3 regional lymph nodes positive." };
+        if (v.tCat === "T3") return { value: "Stage IIA (T3 N0 M0)", matchId: "panII", eq: "Primary tumor > 4 cm." };
+        if (v.tCat === "T2") return { value: "Stage IB (T2 N0 M0)", matchId: "panIB", eq: "Primary tumor 2–4 cm." };
+        return { value: "Stage IA (" + v.tCat + " N0 M0)", matchId: "panIA", eq: "Small organ-confined pancreatic mass (≤ 2 cm)." };
+      }
+    }
+  ];
+
+  // ==============================================================
+  // REGISTRATION INTO GLOBAL MEMORY (DOM COLLISION-PROOF)
+  // ==============================================================
+  try {
+    if (!Array.isArray(window.categories)) {
+      window.categories = [];
+    }
+    if (!Array.isArray(window.tools)) {
+      window.tools = [];
+    }
+
+    var catExists = false;
+    for (var i = 0; i < window.categories.length; i++) {
+      if (window.categories[i] && window.categories[i].id === oncoHnGiCategory.id) {
+        catExists = true;
+        break;
+      }
+    }
+    if (!catExists) {
+      window.categories.push(oncoHnGiCategory);
+    }
+
+    oncoHnGiTools.forEach(function (tool) {
+      var existingIdx = -1;
+      for (var j = 0; j < window.tools.length; j++) {
+        if (window.tools[j] && window.tools[j].id === tool.id) {
+          existingIdx = j;
+          break;
+        }
+      }
+      if (existingIdx >= 0) {
+        window.tools[existingIdx] = tool;
+      } else {
+        window.tools.push(tool);
+      }
+    });
+
+    if (typeof window.SYNONYM_MAP === "object" && window.SYNONYM_MAP !== null) {
+      window.SYNONYM_MAP["head_neck"] = ["oral cavity", "lip", "tongue", "oropharynx", "hpv", "p16", "nasopharynx", "larynx", "glottis", "sinonasal", "parotid", "salivary", "cervical node", "unknown primary", "mucosal melanoma"];
+      window.SYNONYM_MAP["digestive"] = ["esophagus", "egj", "stomach", "gastric", "small intestine", "duodenum", "appendix", "colon", "rectum", "colorectal", "anal", "gist", "net", "liver", "hcc", "cholangiocarcinoma", "gallbladder", "bile duct", "ampulla", "pancreas"];
+    }
+
+    if (typeof window.renderHome === "function") {
+      window.renderHome();
+    }
+  } catch (err) {
+    console.error("Critical error registering Head & Neck / GI staging tools:", err);
+  }
+})();
