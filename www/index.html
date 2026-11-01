@@ -87,19 +87,23 @@
                     <div id="card-content" class="text-xl md:text-2xl font-normal w-full mt-4">Select or upload a deck from the menu to begin studying!</div>
                 </div>
 
-                <!-- 4-Button Anki Rating Layout -->
-                <div id="rating-buttons" class="hidden grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 w-full mt-4 md:mt-6">
-                    <button onclick="rateCard('again')" class="bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/60 text-rose-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
-                        <span>Again</span><span class="text-[10px] opacity-70 mt-0.5">(Repeat)</span>
+                <!-- 4-Button Anki Rating Layout (High contrast, vibrant tones) -->
+                <div id="rating-buttons" class="hidden grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3.5 w-full mt-4 md:mt-6">
+                    <button onclick="rateCard('again')" class="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold py-3 px-3 rounded-xl transition duration-150 text-xs flex flex-col items-center shadow-md">
+                        <span class="text-sm tracking-wide">Again</span>
+                        <span class="text-[10px] text-red-100 mt-0.5 font-normal">(Repeat)</span>
                     </button>
-                    <button onclick="rateCard('hard')" class="bg-amber-950/40 hover:bg-amber-900/50 border border-amber-800/60 text-amber-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
-                        <span>Hard</span><span class="text-[10px] opacity-70 mt-0.5">(Soon)</span>
+                    <button onclick="rateCard('hard')" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-semibold py-3 px-3 rounded-xl transition duration-150 text-xs flex flex-col items-center shadow-md">
+                        <span class="text-sm tracking-wide">Hard</span>
+                        <span class="text-[10px] text-amber-100 mt-0.5 font-normal">(Soon)</span>
                     </button>
-                    <button onclick="rateCard('good')" class="bg-blue-950/40 hover:bg-blue-900/50 border border-blue-800/60 text-blue-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
-                        <span>Good</span><span class="text-[10px] opacity-70 mt-0.5">(Normal)</span>
+                    <button onclick="rateCard('good')" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold py-3 px-3 rounded-xl transition duration-150 text-xs flex flex-col items-center shadow-md">
+                        <span class="text-sm tracking-wide">Good</span>
+                        <span class="text-[10px] text-blue-100 mt-0.5 font-normal">(Normal)</span>
                     </button>
-                    <button onclick="rateCard('easy')" class="bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-200 font-medium py-3 px-2 rounded-xl transition text-xs flex flex-col items-center">
-                        <span>Easy</span><span class="text-[10px] opacity-70 mt-0.5">(Later)</span>
+                    <button onclick="rateCard('easy')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold py-3 px-3 rounded-xl transition duration-150 text-xs flex flex-col items-center shadow-md">
+                        <span class="text-sm tracking-wide">Easy</span>
+                        <span class="text-[10px] text-emerald-100 mt-0.5 font-normal">(Later)</span>
                     </button>
                 </div>
                 
@@ -115,8 +119,8 @@
                 <h3 class="text-[11px] font-semibold uppercase tracking-wider mb-2.5 opacity-70">Add Custom Note to Active Deck</h3>
                 <form onsubmit="addCard(event)" class="space-y-2.5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <input type="text" id="new-front" placeholder="Front (Question or Image link)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
-                        <input type="text" id="new-back" placeholder="Back (Answer)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
+                        <input type="text" id="new-front" placeholder="Front (Question or Cloze text)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
+                        <input type="text" id="new-back" placeholder="Back (Answer or Notes)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
                     </div>
                     <button type="submit" id="adder-btn" class="w-full font-medium py-2 rounded-lg transition text-xs border">Add Note</button>
                 </form>
@@ -410,7 +414,6 @@
 
         function parseCloze(text, isFlipped) {
             if (!text) return '';
-            // Converts {{c1::hidden_text::hint}} into clean blanks or highlighted answers
             return text.replace(/\{\{c\d+::(.*?)(?:::(.*?))?\}\}/g, (match, hiddenText, hint) => {
                 if (!isFlipped) {
                     return `<span class="opacity-60 bg-current/10 px-1.5 py-0.5 rounded border border-dashed border-current">[${hint || '...'}]</span>`;
@@ -443,15 +446,16 @@
             noCardsDiv.classList.add('hidden');
 
             const currentCard = dueCards[currentCardIndex];
-            let contentToShow = !isFlipped ? currentCard.front : currentCard.back;
-            
-            // Parse media references and cloze tags cleanly
-            cardContent.innerHTML = parseMediaReferences(parseCloze(contentToShow, isFlipped));
 
             if (!isFlipped) {
+                cardContent.innerHTML = parseMediaReferences(parseCloze(currentCard.front, false));
                 cardPrompt.innerText = "Question (Click to flip)";
                 ratingButtons.classList.add('hidden');
             } else {
+                let frontRevealed = parseCloze(currentCard.front, true);
+                let backContent = currentCard.back ? `<hr class="my-4 border-current/20"><div class="text-base opacity-90">${currentCard.back}</div>` : '';
+                
+                cardContent.innerHTML = parseMediaReferences(frontRevealed + backContent);
                 cardPrompt.innerText = "Answer";
                 ratingButtons.classList.remove('hidden');
             }
