@@ -34,7 +34,7 @@
                 <button onclick="openFolderModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">+ New Folder</button>
                 <button onclick="openCompileModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">⚙️ Compile</button>
             </div>
-            <!-- Theme selector moved into sidebar menu -->
+            <!-- Theme selector in sidebar menu -->
             <div class="pt-1">
                 <label class="block text-[11px] font-semibold uppercase tracking-wider mb-1 opacity-75">App Theme</label>
                 <select id="theme-selector" onchange="changeTheme(this.value)" class="theme-input w-full text-xs border rounded-lg p-2 focus:outline-none transition-colors">
@@ -64,8 +64,8 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         
         <!-- Top Navbar -->
-        <header id="top-navbar" class="h-14 border-b backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300">
-            <div class="flex items-center gap-3">
+        <header id="top-navbar" class="h-14 border-b backdrop-blur px-3 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300">
+            <div class="flex items-center gap-2">
                 <button onclick="toggleSidebar()" id="mobile-menu-btn" class="md:hidden p-2 rounded-lg border text-xs flex items-center gap-1 transition">
                     <span>☰ Menu</span>
                 </button>
@@ -73,16 +73,16 @@
             
             <div class="flex items-center gap-2">
                 <!-- Search Button -->
-                <button onclick="showSearchView()" class="theme-input text-xs border rounded-lg px-2.5 py-1.5 flex items-center gap-1 transition cursor-pointer" title="Search Cards">
+                <button onclick="showSearchView()" class="theme-input text-xs border rounded-lg px-2.5 py-1.5 flex items-center gap-1 transition cursor-pointer shrink-0" title="Search Cards">
                     <span>🔍</span><span class="hidden sm:inline">Search</span>
                 </button>
 
                 <!-- Jump to Card Input -->
-                <div class="flex items-center gap-1">
-                    <input type="number" id="jump-card-input" min="1" placeholder="Card #" onchange="jumpToCardNum(this.value)" class="theme-input w-16 text-center text-xs border rounded-lg py-1.5 focus:outline-none" title="Jump to card number">
+                <div class="flex items-center gap-1 shrink-0">
+                    <input type="number" id="jump-card-input" min="1" placeholder="Card #" onchange="jumpToCardNum(this.value)" class="theme-input w-24 md:w-28 text-center text-xs md:text-sm font-medium border rounded-lg py-1.5 px-1 focus:outline-none shadow-sm" title="Jump to card number">
                 </div>
 
-                <div id="stats" class="text-[11px] md:text-xs font-medium px-3 py-1.5 rounded-full border shrink-0 transition-colors">
+                <div id="stats" class="text-[11px] md:text-xs font-medium px-2.5 py-1.5 rounded-full border shrink-0 transition-colors">
                     Due: 0 | Total: 0
                 </div>
             </div>
@@ -132,9 +132,14 @@
 
             </div>
 
-            <!-- Manual Note Adder Card -->
+            <!-- Manual Note Adder Card with Clearly Visible Help Button -->
             <div id="adder-card" class="w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors">
-                <h3 class="text-[11px] font-semibold uppercase tracking-wider mb-2.5 opacity-70">Add Custom Note to Active Deck</h3>
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <h3 class="text-[11px] font-semibold uppercase tracking-wider opacity-80 shrink-0">Add Custom Note to Active Deck</h3>
+                    <button onclick="openHelpModal()" class="text-xs font-medium px-2.5 py-1 rounded-md border border-current opacity-85 hover:opacity-100 transition cursor-pointer flex items-center gap-1 shrink-0" title="What does this do?">
+                        <span>❓</span><span>Help</span>
+                    </button>
+                </div>
                 <form onsubmit="addCard(event)" class="space-y-2.5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <input type="text" id="new-front" placeholder="Front (Question or Cloze text)" required class="theme-input w-full border rounded-lg p-2.5 text-xs md:text-sm focus:outline-none">
@@ -167,6 +172,24 @@
         </div>
 
     </main>
+
+    <!-- MODAL: Help Explanation Window -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div id="help-modal-box" class="border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 class="text-lg font-bold flex items-center gap-2">💡 Custom Notes Feature</h3>
+            <p class="text-xs leading-relaxed opacity-90">
+                The <strong>"Add Custom Note to Active Deck"</strong> card allows you to quickly create and append your own flashcards directly into the deck you currently have open, without needing to go back to the official Anki desktop app.
+            </p>
+            <ul class="text-xs space-y-1.5 opacity-85 list-disc pl-4">
+                <li><strong>Front:</strong> Type the question or fill-in-the-blank cloze sentence (e.g. <code class="bg-black/20 px-1 rounded">{{c1::answer}}</code>).</li>
+                <li><strong>Back:</strong> Type the corresponding answer or explanation.</li>
+                <li><strong>Instant Integration:</strong> New cards are added directly to your active review queue and saved securely in your browser's local storage.</li>
+            </ul>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeHelpModal()" class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-semibold rounded-lg transition">Got it</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: Create Folder -->
     <div id="folder-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -215,7 +238,7 @@
                 stats: 'bg-zinc-800 border-zinc-700 text-zinc-200',
                 cardBg: 'bg-zinc-800/80 border-zinc-700/60 text-zinc-100 shadow-xl',
                 adderBg: 'bg-zinc-950/60 border-zinc-800',
-                inputBg: 'bg-zinc-900 border-zinc-800 text-zinc-200 placeholder-zinc-600',
+                inputBg: 'bg-zinc-900 border-zinc-800 text-zinc-200 placeholder-zinc-500',
                 btnBg: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700',
                 modalBox: 'bg-zinc-900 border-zinc-800 text-zinc-100',
                 modalCancel: 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300',
@@ -281,7 +304,7 @@
                 stats: 'bg-[#d2efe6] border-[#bce5db] text-[#1b3b32]',
                 cardBg: 'bg-white border-[#cbebe2] text-[#1b3b32] shadow-sm',
                 adderBg: 'bg-white border-[#cbebe2] shadow-sm',
-                inputBg: 'bg-[#f4faf8] border-[#cbebe2] text-[#1b3b32] placeholder-emerald-300',
+                inputBg: 'bg-[#f4faf8] border-[#cbebe2] text-[#1b3b32] placeholder-emerald-400',
                 btnBg: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32] border-[#bce5db]',
                 modalBox: 'bg-white border-[#cbebe2] text-[#1b3b32]',
                 modalCancel: 'bg-[#d2efe6] hover:bg-[#bce5db] text-[#1b3b32]',
@@ -303,7 +326,7 @@
                 stats: 'bg-[#e2e8f0] border-[#cbd5e1] text-[#1a365d]',
                 cardBg: 'bg-white border-[#cbd5e1] text-[#1a365d] shadow-sm',
                 adderBg: 'bg-white border-[#cbd5e1] shadow-sm',
-                inputBg: 'bg-[#f8fafc] border-[#cbd5e1] text-[#1a365d] placeholder-blue-300',
+                inputBg: 'bg-[#f8fafc] border-[#cbd5e1] text-[#1a365d] placeholder-blue-400',
                 btnBg: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d] border-[#cbd5e1]',
                 modalBox: 'bg-white border-[#cbd5e1] text-[#1a365d]',
                 modalCancel: 'bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#1a365d]',
@@ -325,7 +348,7 @@
                 stats: 'bg-[#ede5f5] border-[#ded2ec] text-[#2e1a47]',
                 cardBg: 'bg-white border-[#e1d5ec] text-[#2e1a47] shadow-sm',
                 adderBg: 'bg-white border-[#e1d5ec] shadow-sm',
-                inputBg: 'bg-[#faf8fd] border-[#e1d5ec] text-[#2e1a47] placeholder-purple-300',
+                inputBg: 'bg-[#faf8fd] border-[#e1d5ec] text-[#2e1a47] placeholder-purple-400',
                 btnBg: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47] border-[#ded2ec]',
                 modalBox: 'bg-white border-[#e1d5ec] text-[#2e1a47]',
                 modalCancel: 'bg-[#ede5f5] hover:bg-[#ded2ec] text-[#2e1a47]',
@@ -351,9 +374,9 @@
                 btn.className = `sidebar-action-btn text-xs py-1.5 px-2 rounded border transition ${t.sidebarActionBtn}`;
             });
             document.getElementById('sidebar-footer').className = `p-3 border-t text-xs flex justify-between ${t.sidebarFooter}`;
-            document.getElementById('top-navbar').className = `h-14 border-b backdrop-blur px-4 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300 ${t.topNavbar}`;
+            document.getElementById('top-navbar').className = `h-14 border-b backdrop-blur px-3 md:px-6 flex items-center justify-between shrink-0 transition-colors duration-300 ${t.topNavbar}`;
             document.getElementById('mobile-menu-btn').className = `md:hidden p-2 rounded-lg border text-xs flex items-center gap-1 transition ${t.mobileMenuBtn}`;
-            document.getElementById('stats').className = `text-[11px] md:text-xs font-medium px-3 py-1.5 rounded-full border shrink-0 transition-colors ${t.stats}`;
+            document.getElementById('stats').className = `text-[11px] md:text-xs font-medium px-2.5 py-1.5 rounded-full border shrink-0 transition-colors ${t.stats}`;
             document.getElementById('card-box').className = `card-box-el w-full min-h-[260px] md:min-h-[320px] rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition border overflow-auto relative group ${t.cardBg}`;
             document.getElementById('adder-card').className = `w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors ${t.adderBg}`;
 
@@ -364,6 +387,7 @@
             document.getElementById('adder-btn').className = `w-full font-medium py-2 rounded-lg transition text-xs border ${t.btnBg}`;
             document.getElementById('modal-box-1').className = `border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${t.modalBox}`;
             document.getElementById('modal-box-2').className = `border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${t.modalBox}`;
+            document.getElementById('help-modal-box').className = `border rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl ${t.modalBox}`;
             document.getElementById('modal-cancel-btn-1').className = `px-4 py-2 text-xs rounded-lg transition ${t.modalCancel}`;
             document.getElementById('modal-cancel-btn-2').className = `px-4 py-2 text-xs rounded-lg transition ${t.modalCancel}`;
             document.getElementById('modal-submit-btn-1').className = `px-4 py-2 font-semibold text-xs rounded-lg transition ${t.modalSubmit}`;
@@ -374,7 +398,7 @@
             renderSidebar();
         }
 
-        let appState = JSON.parse(localStorage.getItem('web_anki_state_v3')) || {
+        let appState = JSON.parse(localStorage.getItem('web_anki_state_v5')) || {
             folders: [],
             decks: [
                 {
@@ -415,7 +439,7 @@
         function saveState() {
             appState.session.activeDeckId = activeDeckId;
             appState.session.currentIndex = currentCardIndex;
-            localStorage.setItem('web_anki_state_v3', JSON.stringify(appState));
+            localStorage.setItem('web_anki_state_v5', JSON.stringify(appState));
         }
 
         function getActiveDeck() {
@@ -572,6 +596,14 @@
                 currentCardIndex = activeReviewQueue.length;
             }
             updateUI();
+        }
+
+        // Help Modal Functions
+        function openHelpModal() {
+            document.getElementById('help-modal').classList.remove('hidden');
+        }
+        function closeHelpModal() {
+            document.getElementById('help-modal').classList.add('hidden');
         }
 
         // Full Page Search Navigation Functions
@@ -908,7 +940,7 @@
             deck.cards.push({
                 id: Date.now(),
                 front: frontInput.value,
-                back: frontInput.value,
+                back: backInput.value,
                 interval: 0,
                 easeFactor: 2.5,
                 dueDate: 0
