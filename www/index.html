@@ -20,12 +20,12 @@
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-80 border-r flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-all duration-200 ease-in-out">
         <!-- Sidebar Header -->
         <div id="sidebar-header" class="p-4 border-b flex items-center justify-between">
-            <h2 class="font-bold flex items-center gap-2">🧠 Anki Suite</h2>
+            <h2 class="font-bold flex items-center gap-2">🧠 Decks</h2>
             <button onclick="toggleSidebar()" class="sidebar-close-btn md:hidden p-2">✕</button>
         </div>
 
-        <!-- Sidebar Actions -->
-        <div id="sidebar-actions" class="p-3 border-b space-y-2">
+        <!-- Sidebar Actions & Theme Selector Menu -->
+        <div id="sidebar-actions" class="p-3 border-b space-y-2.5">
             <label id="upload-label" class="w-full cursor-pointer text-xs font-semibold py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 border shadow-sm">
                 <span>📁 Upload .apkg Deck</span>
                 <input type="file" id="apkg-file" accept=".apkg" class="hidden" onchange="handleApkgUpload(event)">
@@ -33,6 +33,18 @@
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="openFolderModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">+ New Folder</button>
                 <button onclick="openCompileModal()" class="sidebar-action-btn text-xs py-1.5 px-2 rounded border transition">⚙️ Compile</button>
+            </div>
+            <!-- Theme selector moved into sidebar menu -->
+            <div class="pt-1">
+                <label class="block text-[11px] font-semibold uppercase tracking-wider mb-1 opacity-75">App Theme</label>
+                <select id="theme-selector" onchange="changeTheme(this.value)" class="theme-input w-full text-xs border rounded-lg p-2 focus:outline-none transition-colors">
+                    <option value="dark-charcoal">🌙 Dark Charcoal</option>
+                    <option value="light-clean">☀️ Clean White</option>
+                    <option value="light-beige">📜 Soft Beige</option>
+                    <option value="light-mint">🌿 Mint Fresh</option>
+                    <option value="light-sky">☁️ Sky Blue</option>
+                    <option value="light-lavender">💜 Lavender Pastel</option>
+                </select>
             </div>
         </div>
 
@@ -57,7 +69,6 @@
                 <button onclick="toggleSidebar()" id="mobile-menu-btn" class="md:hidden p-2 rounded-lg border text-xs flex items-center gap-1 transition">
                     <span>☰ Menu</span>
                 </button>
-                <h1 id="active-deck-title" class="font-semibold text-sm md:text-lg truncate max-w-[120px] md:max-w-xs">No Deck Selected</h1>
             </div>
             
             <div class="flex items-center gap-2">
@@ -70,16 +81,6 @@
                 <div class="flex items-center gap-1">
                     <input type="number" id="jump-card-input" min="1" placeholder="Card #" onchange="jumpToCardNum(this.value)" class="theme-input w-16 text-center text-xs border rounded-lg py-1.5 focus:outline-none" title="Jump to card number">
                 </div>
-
-                <!-- Theme Selector Dropdown -->
-                <select id="theme-selector" onchange="changeTheme(this.value)" class="theme-input text-xs border rounded-lg px-2 py-1.5 focus:outline-none transition-colors">
-                    <option value="dark-charcoal">🌙 Dark Charcoal</option>
-                    <option value="light-clean">☀️ Clean White</option>
-                    <option value="light-beige">📜 Soft Beige</option>
-                    <option value="light-mint">🌿 Mint Fresh</option>
-                    <option value="light-sky">☁️ Sky Blue</option>
-                    <option value="light-lavender">💜 Lavender Pastel</option>
-                </select>
 
                 <div id="stats" class="text-[11px] md:text-xs font-medium px-3 py-1.5 rounded-full border shrink-0 transition-colors">
                     Due: 0 | Total: 0
@@ -343,7 +344,7 @@
             document.getElementById('app-body').className = `${t.bodyBg} ${t.textCol} h-full flex overflow-hidden relative transition-colors duration-300`;
             document.getElementById('sidebar').className = `fixed md:static inset-y-0 left-0 w-80 border-r flex flex-col h-full z-30 transform -translate-x-full md:translate-x-0 transition-all duration-200 ease-in-out ${t.sidebarBg}`;
             document.getElementById('sidebar-header').className = `p-4 border-b flex items-center justify-between ${t.sidebarHeader}`;
-            document.getElementById('sidebar-actions').className = `p-3 border-b space-y-2 ${t.sidebarActions}`;
+            document.getElementById('sidebar-actions').className = `p-3 border-b space-y-2.5 ${t.sidebarActions}`;
             document.getElementById('upload-label').className = `w-full cursor-pointer text-xs font-semibold py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 border shadow-sm ${t.uploadLabel}`;
             
             document.querySelectorAll('.sidebar-action-btn').forEach(btn => {
@@ -517,7 +518,6 @@
             const ratingButtons = document.getElementById('rating-buttons');
             const noCardsDiv = document.getElementById('no-cards');
             const cardBox = document.getElementById('card-box');
-            document.getElementById('active-deck-title').innerText = deck ? deck.name : 'No Deck Selected';
 
             if (!deck || activeReviewQueue.length === 0 || currentCardIndex >= activeReviewQueue.length) {
                 cardBox.classList.add('hidden');
@@ -548,7 +548,6 @@
 
         function parseMediaReferences(htmlString) {
             if (!htmlString) return '';
-            // Match both Anki <img> tags and raw filenames inside src attributes
             return htmlString.replace(/src="([^"]+)"/g, (match, filename) => {
                 let cleanName = filename.split('/').pop();
                 if (mediaFiles[filename]) {
@@ -909,7 +908,7 @@
             deck.cards.push({
                 id: Date.now(),
                 front: frontInput.value,
-                back: backInput.value,
+                back: frontInput.value,
                 interval: 0,
                 easeFactor: 2.5,
                 dueDate: 0
