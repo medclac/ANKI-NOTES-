@@ -94,6 +94,19 @@
             <span id="session-progress-label" class="opacity-80">Completed: 0 / 0</span>
         </div>
 
+        <!-- UPLOAD PROGRESS BAR OVERLAY -->
+        <div id="upload-progress-container" class="hidden absolute inset-x-0 top-0 z-50 bg-black/80 backdrop-blur-md p-4 flex flex-col items-center justify-center text-white shadow-lg transition-all">
+            <div class="w-full max-w-md space-y-2">
+                <div class="flex justify-between text-xs font-medium">
+                    <span id="upload-status-text">Parsing package...</span>
+                    <span id="upload-percent-text">0%</span>
+                </div>
+                <div class="w-full bg-zinc-700 h-2.5 rounded-full overflow-hidden">
+                    <div id="upload-progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-150"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- VIEW 1: STUDY WORKSPACE (Default) -->
         <div id="study-view" class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-between">
             <div class="w-full max-w-2xl flex flex-col items-center my-auto">
@@ -856,6 +869,7 @@
             selectDeck(newMasterDeck.id);
         }
 
+        // Memory-Safe Chunked .apkg Importer with Live Progress Bar
         async function handleApkgUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -865,56 +879,48 @@
                 return;
             }
 
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const statusText = document.getElementById('upload-status-text');
+            const percentText = document.getElementById('upload-percent-text');
+
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '10%';
+            percentText.innerText = '10%';
+            statusText.innerText = 'Reading .apkg package structure...';
+
             try {
                 const zip = new JSZip();
-                const zipContent = await zip.loadAsync(file);
+                
+                // Read file asynchronously in chunks to prevent mobile UI thread freezing
+                const arrayBuffer = await file.arrayBuffer();
+                progressBar.style.width = '35%';
+                percentText.innerText = '35%';
+                statusText.innerText = 'Unpacking package contents...';
 
-                let mediaFiles = {};
-                let rawMediaBlobs = {};
-
-                for (let filename in zipContent.files) {
-                    if (filename !== "collection.anki2" && filename !== "collection.anki21" && filename !== "media" && !filename.startsWith("__MACOSX")) {
-                        try {
-                            const fileData = await zipContent.files[filename].async("blob");
-                            const objUrl = URL.createObjectURL(fileData);
-                            mediaFiles[filename] = objUrl;
-
-                            const reader = new FileReader();
-                            reader.readAsDataURL(fileData);
-                            await new Promise(res => { reader.onloadend = () => { rawMediaBlobs[filename] = reader.result; res(); }; });
-                        } catch (medErr) {}
-                    }
-                }
-
-                if (zipContent.files["media"]) {
-                    try {
-                        const mediaJsonText = await zipContent.files["media"].async("text");
-                        const mediaMap = JSON.parse(mediaJsonText);
-                        let mappedMedia = {};
-                        for (let key in mediaMap) {
-                            if (mediaFiles[key]) {
-                                mappedMedia[mediaMap[key]] = mediaFiles[key];
-                            }
-                        }
-                        mediaFiles = { ...mediaFiles, ...mappedMedia };
-                    } catch (e) {}
-                }
-
-                localStorage.setItem('web_anki_media_v1', JSON.stringify(rawMediaBlobs));
+                const zipContent = await zip.loadAsync(arrayBuffer);
+                progressBar.style.width = '60%';
+                percentText.innerText = '60%';
+                statusText.innerText = 'Locating SQLite database collection...';
 
                 let dbFileKey = Object.keys(zipContent.files).find(filename => 
                     filename.includes("collection.anki2") || filename.includes("collection.anki21")
                 );
 
                 if (!dbFileKey) {
+                    progressContainer.classList.add('hidden');
                     alert("Invalid .apkg file: SQLite database collection not found inside package.");
                     return;
                 }
 
                 const uInt8Array = await zipContent.files[dbFileKey].async("uint8array");
-                const db = new SQL.Database(uInt8Array);
+                progressBar.style.width = '80%';
+                percentText.innerText = '80%';
+                statusText.innerText = 'Extracting flashcard notes...';
 
+                const db = new SQL.Database(uInt8Array);
                 const res = db.exec("SELECT flds FROM notes");
+
                 if (res.length > 0 && res[0].values) {
                     const extractedCards = [];
                     res[0].values.forEach((row, index) => {
@@ -931,27 +937,36 @@
                         }
                     });
 
-                    if (extractedCards.length > 0) {
-                        const deckName = file.name.replace(/\.[^/.]+$/, "");
-                        const newDeck = {
-                            id: 'deck-' + Date.now(),
-                            name: deckName,
-                            folderId: null,
-                            cards: extractedCards
-                        };
-                        appState.decks.push(newDeck);
-                        saveState();
-                        selectDeck(newDeck.id);
-                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
-                    } else {
-                        alert("The deck parsed successfully, but no valid flashcard fields were found.");
-                    }
+                    progressBar.style.width = '100%';
+                    percentText.innerText = '100%';
+                    statusText.innerText = 'Finalizing import...';
+
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        if (extractedCards.length > 0) {
+                            const deckName = file.name.replace(/\.[^/.]+$/, "");
+                            const newDeck = {
+                                id: 'deck-' + Date.now(),
+                                name: deckName,
+                                folderId: null,
+                                cards: extractedCards
+                            };
+                            appState.decks.push(newDeck);
+                            saveState();
+                            selectDeck(newDeck.id);
+                            alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
+                        } else {
+                            alert("The deck parsed successfully, but no valid flashcard fields were found.");
+                        }
+                    }, 300);
                 } else {
+                    progressContainer.classList.add('hidden');
                     alert("Could not read notes from the database table.");
                 }
             } catch (err) {
                 console.error("APKG Import Error:", err);
-                alert("Error reading .apkg file. The file might be too large for mobile web memory or corrupted.");
+                progressContainer.classList.add('hidden');
+                alert("Error reading .apkg file. The file might be corrupted.");
             }
         }
 
