@@ -77,7 +77,7 @@
                     <span>🔍</span><span class="hidden sm:inline">Search</span>
                 </button>
 
-                <!-- Jump to Card Input -->
+                <!-- Widened Jump to Card Input -->
                 <div class="flex items-center gap-1 shrink-0">
                     <input type="number" id="jump-card-input" min="1" placeholder="Card #" onchange="jumpToCardNum(this.value)" class="theme-input w-24 md:w-28 text-center text-xs md:text-sm font-medium border rounded-lg py-1.5 px-1 focus:outline-none shadow-sm" title="Jump to card number">
                 </div>
@@ -132,7 +132,7 @@
 
             </div>
 
-            <!-- Manual Note Adder Card with Clearly Visible Help Button -->
+            <!-- Manual Note Adder Card with Help Button -->
             <div id="adder-card" class="w-full max-w-2xl mt-6 border p-4 rounded-xl shrink-0 transition-colors">
                 <div class="flex items-center justify-between gap-2 mb-2.5">
                     <h3 class="text-[11px] font-semibold uppercase tracking-wider opacity-80 shrink-0">Add Custom Note to Active Deck</h3>
@@ -462,6 +462,7 @@
         }
 
         function initSession() {
+            restorePersistentMedia();
             const deck = getActiveDeck();
             if (!deck) return;
 
@@ -875,13 +876,26 @@
                 }
 
                 mediaFiles = {};
+                let rawMediaBlobs = {};
+
                 for (let key in mediaMap) {
                     const filename = mediaMap[key];
                     if (contents.files[key]) {
                         const fileData = await contents.files[key].async("blob");
                         mediaFiles[filename] = URL.createObjectURL(fileData);
+                        
+                        const reader = new FileReader();
+                        reader.readAsDataURL(fileData);
+                        await new Promise(resolve => {
+                            reader.onloadend = () => {
+                                rawMediaBlobs[filename] = reader.result;
+                                resolve();
+                            };
+                        });
                     }
                 }
+
+                localStorage.setItem('web_anki_media_v1', JSON.stringify(rawMediaBlobs));
 
                 let dbFileKey = Object.keys(contents.files).find(filename => filename.includes("collection.anki2"));
                 if (!dbFileKey) {
@@ -920,12 +934,26 @@
                         appState.decks.push(newDeck);
                         saveState();
                         selectDeck(newDeck.id);
-                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
+                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards and media!`);
                     }
                 }
             } catch (err) {
                 console.error(err);
                 alert("Error reading .apkg file.");
+            }
+        }
+
+        function restorePersistentMedia() {
+            try {
+                const savedMedia = JSON.parse(localStorage.getItem('web_anki_media_v1'));
+                if (savedMedia) {
+                    mediaFiles = {};
+                    for (let filename in savedMedia) {
+                        mediaFiles[filename] = savedMedia[filename];
+                    }
+                }
+            } catch (e) {
+                console.error("Could not restore media cache", e);
             }
         }
 
