@@ -867,37 +867,42 @@
 
             try {
                 const zip = new JSZip();
-                const contents = await zip.loadAsync(file);
+                const zipContent = await zip.loadAsync(file);
 
-                let mediaMap = {};
-                if (contents.files["media"]) {
-                    const mediaJsonText = await contents.files["media"].async("text");
-                    mediaMap = JSON.parse(mediaJsonText);
-                }
-
-                mediaFiles = {};
+                let mediaFiles = {};
                 let rawMediaBlobs = {};
 
-                for (let key in mediaMap) {
-                    const filename = mediaMap[key];
-                    if (contents.files[key]) {
-                        const fileData = await contents.files[key].async("blob");
-                        mediaFiles[filename] = URL.createObjectURL(fileData);
-                        
-                        const reader = new FileReader();
-                        reader.readAsDataURL(fileData);
-                        await new Promise(resolve => {
-                            reader.onloadend = () => {
-                                rawMediaBlobs[filename] = reader.result;
-                                resolve();
-                            };
-                        });
+                for (let filename in zipContent.files) {
+                    if (filename !== "collection.anki2" && filename !== "collection.anki21" && filename !== "media" && !filename.startsWith("__MACOSX")) {
+                        try {
+                            const fileData = await zipContent.files[filename].async("blob");
+                            const objUrl = URL.createObjectURL(fileData);
+                            mediaFiles[filename] = objUrl;
+
+                            const reader = new FileReader();
+                            reader.readAsDataURL(fileData);
+                            await new Promise(res => { reader.onloadend = () => { rawMediaBlobs[filename] = reader.result; res(); }; });
+                        } catch (medErr) {}
                     }
+                }
+
+                if (zipContent.files["media"]) {
+                    try {
+                        const mediaJsonText = await zipContent.files["media"].async("text");
+                        const mediaMap = JSON.parse(mediaJsonText);
+                        let mappedMedia = {};
+                        for (let key in mediaMap) {
+                            if (mediaFiles[key]) {
+                                mappedMedia[mediaMap[key]] = mediaFiles[key];
+                            }
+                        }
+                        mediaFiles = { ...mediaFiles, ...mappedMedia };
+                    } catch (e) {}
                 }
 
                 localStorage.setItem('web_anki_media_v1', JSON.stringify(rawMediaBlobs));
 
-                let dbFileKey = Object.keys(contents.files).find(filename => 
+                let dbFileKey = Object.keys(zipContent.files).find(filename => 
                     filename.includes("collection.anki2") || filename.includes("collection.anki21")
                 );
 
@@ -906,7 +911,7 @@
                     return;
                 }
 
-                const uInt8Array = await contents.files[dbFileKey].async("uint8array");
+                const uInt8Array = await zipContent.files[dbFileKey].async("uint8array");
                 const db = new SQL.Database(uInt8Array);
 
                 const res = db.exec("SELECT flds FROM notes");
@@ -937,7 +942,7 @@
                         appState.decks.push(newDeck);
                         saveState();
                         selectDeck(newDeck.id);
-                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards and media!`);
+                        alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards!`);
                     } else {
                         alert("The deck parsed successfully, but no valid flashcard fields were found.");
                     }
@@ -946,7 +951,7 @@
                 }
             } catch (err) {
                 console.error("APKG Import Error:", err);
-                alert("Error reading .apkg file. Ensure it is a valid Anki package export.");
+                alert("Error reading .apkg file. The file might be too large for mobile web memory or corrupted.");
             }
         }
 
