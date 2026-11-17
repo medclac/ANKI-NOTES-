@@ -861,7 +861,7 @@
             if (!file) return;
 
             if (!SQL) {
-                alert("Database engine is still initializing. Please wait a second.");
+                alert("Database engine is still initializing. Please wait 2 seconds and try again.");
                 return;
             }
 
@@ -897,9 +897,12 @@
 
                 localStorage.setItem('web_anki_media_v1', JSON.stringify(rawMediaBlobs));
 
-                let dbFileKey = Object.keys(contents.files).find(filename => filename.includes("collection.anki2"));
+                let dbFileKey = Object.keys(contents.files).find(filename => 
+                    filename.includes("collection.anki2") || filename.includes("collection.anki21")
+                );
+
                 if (!dbFileKey) {
-                    alert("Invalid .apkg file: Database not found.");
+                    alert("Invalid .apkg file: SQLite database collection not found inside package.");
                     return;
                 }
 
@@ -935,11 +938,15 @@
                         saveState();
                         selectDeck(newDeck.id);
                         alert(`Successfully imported "${deckName}" with ${extractedCards.length} cards and media!`);
+                    } else {
+                        alert("The deck parsed successfully, but no valid flashcard fields were found.");
                     }
+                } else {
+                    alert("Could not read notes from the database table.");
                 }
             } catch (err) {
-                console.error(err);
-                alert("Error reading .apkg file.");
+                console.error("APKG Import Error:", err);
+                alert("Error reading .apkg file. Ensure it is a valid Anki package export.");
             }
         }
 
